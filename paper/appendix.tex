@@ -1,0 +1,384 @@
+\section{Experimental Setup}
+\label{sec:appendix:exp}
+
+\noindent This appendix provides comprehensive experimental setup details, including tasks, baselines, hyperparameters, and implementation specifics.
+\setlist[itemize]{itemsep=1pt, topsep=1pt, parsep=0pt, partopsep=0pt}
+\setlist[enumerate]{itemsep=1pt, topsep=1pt, parsep=0pt, partopsep=0pt}
+
+\subsection{Datasets}
+
+\noindent \textbf{GSM8K} \cite{cobbe2021training}: Grade school math word problems requiring multi-step arithmetic reasoning. We use the full official test set of 1,319 examples from the original benchmark for final evaluation. During prompt optimization, we use a separate 200-example validation subset to compute fitness scores, ensuring that no test data leakage occurs. Problems involve operations like addition, multiplication, and percentages. Success requires prompts that guide the step-by-step generation of solutions.
+
+\noindent \textbf{MedQA} \cite{jin2021disease}: Medical question answering from the USMLE exam. We use 200 questions covering disease diagnosis, treatment, and pathophysiology. Evaluation uses choice-only accuracy on this 200-question subset; we do not fine-tune model weights (prompt-only optimization), avoiding training-set leakage. This task probes performance on a specialized domain and high-accuracy regimes.
+
+\noindent \textbf{BANKING77} \cite{casanueva2020efficient}: Fine-grained intent classification with 77 banking-related intent categories (e.g., \texttt{card\_arrival}, \texttt{exchange\_rate}, \texttt{lost\_or\_stolen\_card}). We use 200 randomly sampled examples for evaluation. This task tests DP-ES on a classification problem with a large label space, where prompt optimization must convey category structure without memorizing individual examples.
+
+\noindent \textbf{Alpaca} \cite{taori2023alpaca}: Open-ended instruction-following evaluated by an LLM judge. We use 200 instructions sampled from the Alpaca evaluation set. Quality is scored on a $[0,1]$ rubric by DeepSeek-Chat (temperature 0.0, max 64 tokens), assessing instruction adherence, factual accuracy, and response quality. This task represents a fundamentally different evaluation paradigm (generative quality via LLM-judge rather than exact-match accuracy), testing whether DP-ES generalizes beyond closed-form metrics.
+
+\subsection{Baselines}
+
+\textbf{DP-OPT} \cite{hong2024dpopt}: State-of-the-art DP prompt optimization using histogram-based token generation with the exponential mechanism. We use the official implementation \footnote{\url{https://github.com/VITA-Group/DP-OPT}}.
+
+\noindent \textbf{Non-DP}: Standard prompt optimization without privacy constraints, implemented using the TextGrad\footnote{\url{https://github.com/zou-group/textgrad}} \cite{yuksekgonul2024textgrad}
+ method. This provides an upper bound on achievable performance.
+
+\noindent \textbf{PromptDPSGD (local)} \cite{Duan2023FlocksOS}: DP-SGD on soft prompt embeddings. We run PromptDPSGD with local Qwen-2.5-7B, prompt length 20, 10 epochs, learning rate 0.005, max grad norm 1.0, batch size 2 or 4. Results are summarized in Appendix~\ref{sec:appendix:local}.
+
+
+\subsection{Hyperparameters}
+
+\textbf{DP-ES configuration:}
+\begin{itemize}
+    \item Population size: $K=6$ prompts per generation
+    \item Iterations: $T=3$; sampled scoring batch $b=10$
+    \item Gaussian mechanism: score sensitivity $1/b$, noise standard deviation $1.0$ (noise multiplier $z=10$)
+    \item Selection: Gumbel-smoothed top-$k$ over privatized scores (default); deterministic top-$k$ is an alternative
+    \item Accounting: uniform subsampling without replacement and RDP composition over $TK=18$ score releases, converted at $\delta=10^{-5}$
+    \item Mutation mode: BALANCED (mix of exploration and exploitation)
+    \item Randomness: run counts are reported with each experiment; the three-seed validation studies use seeds [42, 123, 456]
+\end{itemize}
+
+\noindent \textbf{DP-OPT configuration:} We use 6 candidate prompts per iteration, 3 iterations, and its reported $(\varepsilon{=}1,\delta{=}10^{-5})$ setting. DP-ES is compared under the same conservative ceiling; its recomputed bound is tighter ($\varepsilon\leq0.71$).
+
+\noindent \textbf{Initial prompt:} For both methods, we use a generic starting prompt: \textit{``Answer the following question carefully.''}
+
+% \subsection{Evaluation Metrics}
+
+% \textbf{Primary metric:} Accuracy (percentage of correct predictions) on held-out test sets.
+
+% \textbf{Privacy metrics:}
+% \begin{itemize}
+%     \item \textbf{$\varepsilon_{\text{consumed}}$}: Privacy budget consumed by the algorithm (tracked via privacy accountant)
+%     \item \textbf{$\varepsilon_{\text{observed}}$}: Empirical privacy leakage measured via neighboring dataset audits (Appendix~\ref{sec:appendix:privacy})
+% \end{itemize}
+
+% \textbf{Statistical testing:} We run each method with 3 random seeds and report mean $\pm$ standard deviation. Statistical significance is assessed via two-sample t-tests ($\alpha=0.05$).
+
+\subsection{Implementation}
+
+\textbf{LLM API:} We use DeepSeek-V3.2 (deepSeek-chat) via the OpenAI-compatible API\footnote{\url{https://api.deepseek.com/v1}}.
+
+\noindent \textbf{Privacy accounting:} We use the \texttt{autodp} library \cite{autodp} with the R\'enyi DP accountant for tight composition bounds.
+
+\noindent \textbf{Reproducibility:} We report run counts with each result (30 runs for the GSM8K failure diagnosis, five seeds for the selector ablation, and three seeds for the validation studies). Code, prompts, accountant inputs, and evaluation scripts accompany the final paper.
+
+% \textbf{Computational resources:} Each DP-ES run takes approximately 2-3 hours on a single CPU with API access. Total cost per experiment: \$5-10 in API fees.
+
+\subsection{Mutation Strategies and Templates}
+\textbf{Mutation strategies:} We implement three modes:
+\begin{itemize}
+    \item \texttt{EXPLORE}: Generate semantically diverse variations
+    \item \texttt{EXPLOIT}: Make small refinements to successful prompts
+    \item \texttt{BALANCED}: Mix exploration and exploitation
+\end{itemize}
+
+\noindent The mutation prompt template is:
+\begin{quote}
+\textit{``You are a prompt optimization assistant. Generate [K] creative variations of the following prompt that might improve performance: [parent prompt]. Make [large/small] semantic changes.''}
+\end{quote}
+
+% \subsection{Selection Implementation (Gumbel-max)}
+% We implement selection efficiently via:
+% \begin{equation}
+% \mathcal{P}_{t+1} = \text{top-}K\left\{ \tilde{s}_p + \text{Gumbel}\left(0, \frac{2\Delta u}{\varepsilon_{\text{select}}}\right) \right\}_{p \in \mathcal{P}_t}
+% \end{equation}
+
+\section{Privacy Guarantees and Verification}
+\label{sec:appendix:privacy_details}
+
+
+
+\subsection{Theoretical Framework: Decoupled DP Evolution}
+We restate the privacy argument in full. Let $\calD$ be the private dataset and $\calP_1$ an initial population generated without access to $\calD$. For $t=1,\dots,T$ define
+
+\begin{align*}
+  Z_t &= M_t(\calD, \calP_t), &
+  \calP'_t &= \mathrm{Sel}_t(Z_t), \\
+  \calP_{t+1} &= G_t(\calP'_t, U_t). &&
+\end{align*}
+
+\noindent where $M_t$ releases $K$ sampled-Gaussian scores, $\mathrm{Sel}_t$ selects from those privatized scores, and $G_t$ mutates selected prompts using only public randomness $U_t$. Both $\mathrm{Sel}_t$ and $G_t$ are post-processing. Thus the total privacy cost is exactly that of the adaptively composed sampled-Gaussian score releases.
+
+
+\begin{proof}[Proof sketch]
+\textbf{Step 1 (Privacy source).} At each round $t$, only $M_t$ touches $\calD$. Each candidate score uses a uniformly sampled batch of size $b$, clips per-record utility to $[0,1]$, averages it, and adds Gaussian noise with standard deviation $z/b$.
+
+\noindent \textbf{Step 2 (Post-processing).} Selection sees only privatized scores; mutation sees only public or previously privatized prompts. Neither operation adds privacy loss.
+
+\noindent \textbf{Step 3 (RDP composition).} We apply the without-replacement subsampling bound of \citet{wang2019subsampled} to each score release, add RDP across all $TK$ adaptive releases, and convert to $(\varepsilon,\delta)$-DP. Post-processing then gives the same guarantee for the released final prompt.
+
+\textbf{Intuition.} Private data influence the search only through noisy scalar scores. Every later operation---ranking, randomized smoothing, LLM mutation, and final choice---uses already privatized outputs.
+\end{proof}
+
+\subsection{Supplementary Derivations}
+\label{sec:appendix:derivations}
+
+\noindent\textbf{Sampled-Gaussian accounting.}
+For a batch mean with clipped per-record utility in $[0,1]$, replace-one sensitivity is $\Delta_B=1/b$. Adding noise $\mathcal{N}(0,(z/b)^2)$ is a Gaussian mechanism with noise multiplier $z$. We apply uniform subsampling without replacement at rate $q=b/n$, compose $TK$ mechanisms in RDP, and convert at $\delta=10^{-5}$ using AutoDP \cite{autodp}. Sampled runs use $b=10$ and $z=10$; full-set variants retain noise standard deviation 1.0, giving $b=n=200$ and $z=200$. With $K=6$ and $T=3$, the resulting bounds are:
+
+\begin{table*}[t]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Setting} & $n$ & $q$ & $\varepsilon$ at $\delta=10^{-5}$ \\
+\midrule
+All sampled-score runs & 200 & 0.05 & $\leq0.71$ \\
+Full-set score variants & 200 & 1.00 & $<0.10$ \\
+\bottomrule
+\end{tabular}
+\caption{Recomputed privacy bounds for 18 sampled-Gaussian score releases. We report the common conservative ceiling $\varepsilon\leq1$.}
+\label{tab:rdp_bounds}
+\end{table*}
+
+\noindent\textbf{Gumbel-smoothed selection.}
+For smoothing only, we add independent Gumbel noise to each privatized score before ranking:
+\begin{equation}
+\hat{s}_p = \tilde{s}_p + \operatorname{Gumbel}(0,\beta).
+\end{equation}
+Because this operation is a function only of already privatized scores and fresh randomness, it is post-processing for every $\beta\geq0$. Deterministic top-$k$ is the $\beta=0$ special case. Table~\ref{tab:em_ablation} compares their utility.
+
+\subsection{Comparison with DP-OPT Privacy}
+
+\noindent DP-OPT is evaluated at its reported $(\varepsilon{=}1.0,\delta{=}10^{-5})$ setting; DP-ES satisfies the same ceiling with a tighter recomputed bound. DP-ES achieves:
+
+\begin{itemize}
+    \item \textbf{Better utility on complex tasks:} +38.6 pp on GSM8K and +6.2 pp on MedQA under the common $\varepsilon\leq1$ ceiling
+    \item \textbf{Competitive on simpler tasks:} Within 2 pp of DP-OPT on BANKING77 and Alpaca
+    \item \textbf{Decoupled exploration:} Only sampled-Gaussian scores consume privacy; mutation and selection are post-processing
+    \item \textbf{Reproducible accounting:} The released accountant inputs yield $\varepsilon\leq0.71$ for all reported DP-ES tasks
+\end{itemize}
+
+This comparison shows that changing the search structure can improve utility while satisfying an equal or stronger privacy bound.
+
+\subsection{Threat Model and Assumptions}
+
+\noindent Our privacy guarantees assume:
+
+\begin{enumerate}
+    \item \textbf{Trusted curator:} The party running DP-ES has access to the private dataset $\calD$ but releases only the final prompt with DP guarantees.
+
+    \item \textbf{Record-level privacy:} The privacy unit is one data record $(x_i, y_i)$. Group privacy (protecting multiple records per individual) requires scaling $\varepsilon$ by group size.
+
+    \item \textbf{Trusted computation boundary:} The curator and any model endpoint used for private-data evaluation are trusted processors. The released prompt is protected; DP does not hide API inputs from the provider receiving them.
+
+    \item \textbf{Mutation isolation:} The mutation LLM receives only a parent prompt, never records or record-derived text feedback. PII memorized independently in the pretrained model's parameters is outside this record-level threat model and should be handled by provider safeguards.
+
+    \item \textbf{Post-processing safety:} The released prompt may be used by downstream applications without additional loss about $\calD$, although new downstream data require their own privacy analysis.
+\end{enumerate}
+
+These assumptions are standard in the DP literature and match those of DP-OPT and other DP-ML methods.
+
+\subsection{Implementation Diagnostics}
+
+We log the exact noise draws used by the scorer. For both GSM8K and MedQA, 1,000 standardized samples are consistent with the configured Gaussian distribution under a Kolmogorov--Smirnov check. We also rerun the optimizer on five neighboring datasets as a debugging exercise. The resulting nearest-neighbor output-distance statistic is degenerate on near-ceiling MedQA and is not a calibrated likelihood-ratio estimator; accordingly, we do not report it as an observed privacy parameter. These checks can catch missing noise or gross data-flow errors, but only the accountant in Table~\ref{tab:rdp_bounds} establishes the formal guarantee.
+
+
+\section{Additional Results and Analyses}
+\label{sec:appendix:results}
+
+\noindent Main results appear in Section~\ref{sec:results}. This appendix provides efficiency comparisons, DP-OPT failure analysis, local validation (including PromptDPSGD), ablations, accounting details, and implementation diagnostics.
+
+\subsection{Efficiency Comparison}
+\label{sec:appendix:efficiency}
+
+\noindent Table~\ref{tab:efficiency_full} presents detailed runtime comparisons between DP-ES and DP-OPT across both API and local deployments.
+
+\begin{table*}[t]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Task} & \textbf{DP-OPT} & \textbf{DP-ES (Ours)} & \textbf{Speedup} \\
+\midrule
+\multicolumn{4}{l}{\textit{DeepSeek API ($\varepsilon\leq1.0$, 1,319 test examples, 3 iterations):}} \\
+GSM8K & 45.7 hours & \textbf{17.9 hours} & \textbf{2.5$\times$} \\
+MedQA & 18.4 hours & \textbf{7.0 hours} & \textbf{2.6$\times$} \\
+\midrule
+\multicolumn{4}{l}{\textit{Local Qwen2.5-7B ($\varepsilon\leq1.0$, 200 examples):}} \\
+GSM8K & 14.6 hours & \textbf{7.4 hours} & \textbf{1.98$\times$} \\
+MedQA & 3.2 hours & \textbf{1.9 hours} & \textbf{1.73$\times$} \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Efficiency Comparison (wall-clock).} DP-ES is consistently faster than DP-OPT across both API and local deployments due to efficient population-based evaluation.}
+\label{tab:efficiency_full}
+\end{table*}
+
+\noindent\textbf{Cost Breakdown by Call Purpose.}
+Wall-clock runtime alone does not isolate \textit{where} the efficiency gain comes from. Table~\ref{tab:efficiency_breakdown} decomposes a representative GSM8K run (seed~42, 200-example optimization set, $\varepsilon\leq1.0$) by call purpose, separating mutation from private-data evaluation. Two observations:
+\begin{itemize}[leftmargin=*,itemsep=-0.2em,topsep=2pt]
+\item \textbf{DP-OPT's mutation calls also consume the DP budget.} DP-OPT's histogram-based token construction queries private counts at every token, so its 3 mutation calls (90 token-level votes in total) are not free---they enter the privacy accountant alongside the 30 evaluation calls.
+\item \textbf{DP-ES mutation is post-processing.} DP-ES generates whole-prompt mutations via LLM calls that never touch the private dataset; only its evaluation call groups access private records. Although DP-ES uses larger contexts, the number of private-data call groups is 3$\times$ smaller.
+\end{itemize}
+The resulting efficiency profile is best described as \textit{trade tokens for robustness}: DP-ES uses privacy-free mutation and fewer private-data call groups. Wall-clock runtime drops by 2.5$\times$ because fewer serial round-trips dominate latency, not because token count is lower.
+
+\begin{table*}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Cost component} & \textbf{DP-OPT} & \textbf{DP-ES} & \textbf{Ratio} \\
+\midrule
+\multicolumn{4}{l}{\textit{Logged private-data call groups:}} \\
+\quad Mutation (token-level / privacy-free) & 3 (DP) & 0 (free) & --- \\
+\quad Evaluation (Gaussian-noised) & 30 & 10 & 3.0$\times$ fewer \\
+\quad \textbf{Total private-data groups} & \textbf{33} & \textbf{10} & \textbf{3.3$\times$ fewer} \\
+\midrule
+\multicolumn{4}{l}{\textit{Token usage:}} \\
+\quad Input tokens & 1{,}309 & 6{,}120 & 4.7$\times$ more \\
+\quad Output tokens & 2{,}707 & 5{,}000 & 1.8$\times$ more \\
+\quad Total tokens & 4{,}016 & 11{,}120 & 2.8$\times$ more \\
+\midrule
+\multicolumn{4}{l}{\textit{Wall-clock:}} \\
+\quad Runtime (hours) & 16.6 & 6.5 & 2.5$\times$ faster \\
+\quad Accuracy (single run) & 91.0\% & 86.5\% & --- \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Efficiency breakdown by call purpose} (GSM8K, seed 42, $\varepsilon\leq1$, 200-example optimization set). Counts are logger-level call groups, not individual per-example model requests. DP-ES uses more tokens but fewer private-data round trips, yielding 2.5$\times$ lower wall-clock time in this setting. Provider pricing and validation size can change the cost comparison.}
+\label{tab:efficiency_breakdown}
+\end{table*}
+
+\subsection{DP-OPT Detailed Failure Analysis}
+\label{sec:appendix:dpopt_failures}
+
+\noindent We conducted a comprehensive analysis of 30 DP-OPT experiments on GSM8K and identified 19 anomalous runs (63\% failure rate) exhibiting systematic failure patterns. Two modes dominate among the failures: \textbf{template damage} (destruction or partial loss; 5/19, 26\%, typical accuracy $\leq$25\%) and \textbf{suboptimal selection} (14/19; 74\%, typical accuracy 35--55\%); in contrast, DP-ES shows \textbf{0/30} observed failures. Table~\ref{tab:dpopt_full_failures} categorizes these failures by severity. The main-text visualization (Figure~\ref{fig:dpopt_failures_summary}) reproduces an actual DP-OPT trajectory alongside the aggregate failure counts.
+
+\begin{table*}[t]
+\centering
+\small
+\begin{tabular}{llcc}
+\toprule
+\textbf{Severity} & \textbf{Description} & \textbf{Count} & \textbf{Acc Range} \\
+\midrule
+Severe & Template destroyed & 2 & 0.0\% \\
+Moderate & Partial template loss & 3 & 12.5-25.0\% \\
+Minor & Suboptimal selection & 14 & 35.0-55.0\% \\
+\midrule
+\textbf{Total Failures} & & \textbf{19/30} & -- \\
+\textbf{DP-ES Failures} & & \textbf{0/30} & -- \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Full DP-OPT Failure Breakdown.} 14 of 19 failures share suboptimal selection; template damage (destruction or partial loss) is the most severe mode.}
+\label{tab:dpopt_full_failures}
+\end{table*}
+
+\noindent \textbf{Root Cause Analysis:}
+
+\noindent \textbf{1. Token-Level Myopia:} DP-OPT generates prompts token by token using a histogram-based exponential mechanism. At each position, it votes on the next token across data partitions. This greedy process lacks global coherence checking, allowing it to:
+\begin{itemize}
+    \item Delete critical placeholders like \texttt{\{question\}} mid-generation
+    \item Create syntactically valid but semantically meaningless prompts
+    \item Drift toward generic text unrelated to the task
+\end{itemize}
+
+\noindent \textbf{2. Non-Backtracking Search:} Once a token is selected, DP-OPT cannot revise it. If early tokens lead to a poor prompt structure, the algorithm is permanently stuck. This contrasts with DP-ES, which maintains a diverse population and can recover from individual poor candidates.
+
+\noindent \textbf{3. Sample-Based Evaluation Noise:} DP-OPT evaluates candidates on small samples (typically 10-20 examples). A prompt that performs well by chance on this sample may be selected and propagated, even if it generalizes poorly. DP-ES mitigates this through population diversity—multiple independent candidates reduce the risk of overfitting to evaluation noise.
+\vspace{0.4em}
+
+\noindent \textbf{Suboptimal selection.} DP noise can reverse the ordering of candidates with similar utility. DP-OPT commits to each token-level decision without backtracking, so an early rank inversion can permanently redirect construction. DP-ES does not eliminate rank inversions; instead, its population retains multiple complete hypotheses and can recover in later rounds. The 14 runs in this category end in the 35--55\% accuracy cluster without complete placeholder destruction.
+\vspace{0.5em}
+
+\noindent \textbf{Why DP-ES Reduces These Failures:}
+
+\begin{itemize}
+    \item \textbf{Prompt-level generation:} Mutations operate on complete prompts, preserving global structure
+    \item \textbf{Population diversity:} Even if one candidate fails, others can compensate
+    \item \textbf{Privacy-free exploration:} Mutations don't consume privacy budget, allowing extensive search
+\end{itemize}
+
+This analysis explains the 38.6 pp performance gap on GSM8K: DP-OPT's algorithmic fragility causes frequent catastrophic failures, while DP-ES's population-based design provides robustness.
+
+\subsection{Local Validation with Qwen2.5-7B}
+\label{sec:appendix:local}
+
+\noindent To check whether the main task-dependent trend transfers beyond the API model, we evaluate four methods with a local Qwen2.5-7B model \cite{qwen2.5} under the common verified $\varepsilon\leq1$ setting.
+
+\subsubsection{Experimental Setup}
+
+\noindent\textbf{Model:} Qwen2.5-7B-Instruct (local deployment) \\
+\textbf{Methods:} Non-DP, DP-ES, DP-OPT, PromptDPSGD \\
+\textbf{Tasks:} GSM8K, MedQA \\
+\textbf{Privacy guarantee:} $\varepsilon\leq1$, $\delta=10^{-5}$ \\
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Method} & \textbf{GSM8K} & \textbf{MedQA} \\
+\midrule
+DP-ES & $53.8\pm6.1$ & $81.2\pm1.3$ \\
+DP-OPT & $37.4\pm11.6$ & $83.0\pm2.1$ \\
+PromptDPSGD & $20.0\pm5.8$ & $34.8\pm19.0$ \\
+Non-DP & $26.2\pm10.2$ & $79.5\pm4.2$ \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Local Qwen2.5-7B validation} at the common $\varepsilon\leq1$ setting (mean $\pm$ std).}
+\label{tab:local_validation}
+\end{table}
+
+
+\subsubsection{Key Findings}
+
+\begin{itemize}
+    \item \textbf{GSM8K:} DP-ES exceeds DP-OPT by 16.4 pp and halves the standard deviation, reproducing the reasoning-task advantage.
+    \item \textbf{MedQA:} DP-ES and DP-OPT are comparable, consistent with the task-dependent pattern in the API results.
+    \item \textbf{PromptDPSGD:} The soft-prompt baseline trails both discrete methods on this 7B model.
+\end{itemize}
+
+\subsection{Ablation Studies}
+
+\noindent To validate our design choices, we conduct ablations on GSM8K under the common $\varepsilon\leq1$ guarantee.
+
+\noindent \textbf{Population Size Ablation (Table~\ref{tab:pop_ablation}):} We vary population size while keeping $K\times T\leq24$. $K=6,T=3$ gives the best observed diversity--depth balance; smaller populations explore too narrowly, while larger populations use fewer refinement rounds under the fixed search-call cap.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{cccc}
+\toprule
+\textbf{Population} & \textbf{Iterations} & \textbf{Accuracy} & \textbf{$\Delta$ vs Baseline} \\
+\midrule
+3  & 4 & 78.5\% & -8.0 pp \\
+\textbf{6} & \textbf{3} & \textbf{86.5\%} & \textbf{--} \\
+9  & 2 & 82.0\% & -4.5 pp \\
+12 & 2 & 82.0\% & -4.5 pp \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Population Size Ablation.} $K=6$, $Iterations=3$ provides an optimal diversity-depth tradeoff.}
+\label{tab:pop_ablation}
+\end{table}
+
+\subsection{Practitioner Hyperparameter Guide}
+\label{sec:appendix:hyperparameter_guide}
+
+\noindent Start with $K=6,T=3$ and recompute the RDP bound whenever $K$, $T$, $b$, $n$, or $z$ changes. Increasing $KT$ increases both evaluation cost and composed privacy loss; reducing $K$ narrows exploration, while reducing $T$ limits iterative refinement.
+
+\subsection{Selection Mechanism Ablation (Extended)}
+\label{sec:appendix:em_ablation}
+
+\noindent Table~\ref{tab:em_ablation} reports the five-seed comparison at the default setting. Gumbel-smoothed and deterministic top-$k$ are statistically similar (88.8\% vs.\ 88.6\%) and have identical privacy accounting because both post-process privatized scores. We use smoothing by default but do not claim a consistent variance advantage.
+
+\subsection{Population Diversity Analysis}
+\label{sec:appendix:diversity}
+
+\noindent To understand DP-ES's exploration-exploitation dynamics, we analyzed population diversity over 5 iterations using sentence-BERT embeddings (all-mpnet-base-v2). We measure diversity as the average pairwise cosine distance between prompt embeddings. Figure~\ref{fig:performance_overview} (right) visualizes this trajectory.
+
+\vspace{-0.4em}
+\section{Proofs}
+\label{sec:appendix:proofs}
+
+\vspace{-0.3em}
+\subsection{Proof of Proposition~\ref{prop:mutation-free}}
+By the post-processing property of differential privacy \cite{dwork2014algorithmic}, a function of public inputs or previously privatized outputs adds no privacy loss. Mutate receives only a parent prompt and public randomness, never $\calD$ or record-derived feedback; it is therefore post-processing.
+
+\vspace{-0.3em}
+\subsection{Proof of Proposition~\ref{prop:decoupled}}
+Because mutation and candidate generation do not access $\calD$, they incur zero additional privacy loss. Therefore, for any number of mutations, privacy loss is determined entirely by the sampled-Gaussian score releases.
+
+\vspace{-0.3em}
+\subsection{Proof of Theorem~\ref{thm:main}}
+Mutations consume zero budget (Proposition~\ref{prop:mutation-free}). Each iteration releases $K$ sampled-Gaussian scores. Applying the without-replacement RDP amplification bound to each release, composing the resulting RDP guarantees over $TK$ adaptive calls, and converting at the target $\delta$ yields Table~\ref{tab:rdp_bounds}. Selection and subsequent mutation are post-processing, so the final prompt inherits the same $(\varepsilon,\delta)$ guarantee.

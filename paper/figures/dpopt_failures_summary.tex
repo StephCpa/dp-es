@@ -1,0 +1,83 @@
+% Main-text failure-mode comparison using REAL trajectory data
+% Source: detailed_logs/DP-OPT-BlackBox_GSM8K (Medium)_20260311_053606.json (seed 42)
+%         results/dpes_gsm8k__1.csv/detailed_logs/DP-ES_GSM8K (Medium)_20251225_074911.json
+% A detailed reference scenario (illustrative) is retained in Appendix Fig. dpopt_failure_modes.
+
+\begin{figure*}[!t]
+\begingroup
+\setlength{\textfloatsep}{4pt plus 1pt minus 1pt}
+\setlength{\floatsep}{4pt plus 1pt minus 1pt}
+\setlength{\intextsep}{4pt plus 1pt minus 1pt}
+\captionsetup{font=footnotesize,skip=2pt}
+\centering
+\vspace{-0.4em}
+
+% Top: DP-OPT actual trajectory (REAL data, GSM8K, seed 42)
+\begin{tcolorbox}[
+    width=0.96\textwidth,
+    colback=red!5!white,
+    colframe=red!75!black,
+    title={\textbf{DP-OPT: Template Damage in the Search Trajectory (GSM8K, real log)}},
+    fonttitle=\bfseries,
+    sharp corners,
+    boxrule=0.4pt,
+    before skip=0pt,
+    after skip=0pt,
+    top=1mm,
+    bottom=1mm,
+]
+\footnotesize
+\textbf{Iter 0 (selected):} \textit{``Carefully solve the following math question and provide a clear explanation of your reasoning: \textcolor{green!50!black}{\{question\}}''} \\
+\textbf{Iter 1 (selected):} \textit{``Solve the math problem step-by-step, ensuring each step is clearly explained and justified before proceeding to the next.''} \quad \textcolor{red}{\textbf{[\{question\} lost]}} \\
+\textbf{Iter 2 (selected, final):} \textit{``Present a structured solution by enumerating each step, explaining the purpose of that step, and confirming its correctness before continuing.''} \quad \textcolor{red}{\textbf{[\{question\} lost]}} \\[0.3em]
+\textbf{Trajectory statistics:} 21/33 candidate prompts (64\%) lose \texttt{\{question\}} during search; 2/3 selected (winning) prompts in this run lose the placeholder. Across 30 runs, template damage drives 26\% of failures (Appendix~\ref{sec:appendix:dpopt_failures}).
+\end{tcolorbox}
+
+\vspace{0.3em}
+
+% Middle: Suboptimal Selection (referencing constructed scenario in appendix)
+\begin{tcolorbox}[
+    width=0.96\textwidth,
+    colback=orange!5!white,
+    colframe=orange!75!black,
+    title={\textbf{DP-OPT: Noise-Driven Suboptimal Selection}},
+    fonttitle=\bfseries,
+    sharp corners,
+    boxrule=0.4pt,
+    before skip=0pt,
+    after skip=0pt,
+    top=1mm,
+    bottom=1mm,
+]
+\footnotesize
+Histogram-based selection over small noisy batches commits to wrong candidates when Gaussian noise flips near-tied ranks. With no backtracking, a single inversion can propagate through subsequent iterations. \textbf{Observed in 14/19 failure runs (74\%)}; aggregate ranges and root-cause analysis appear in Appendix~\ref{sec:appendix:dpopt_failures}.
+\end{tcolorbox}
+
+\vspace{0.3em}
+
+% Bottom: DP-ES robustness (REAL final prompt from same task)
+\begin{tcolorbox}[
+    width=0.96\textwidth,
+    colback=green!5!white,
+    colframe=green!75!black,
+    title={\textbf{DP-ES: Structural Robustness (no observed failures)}},
+    fonttitle=\bfseries,
+    sharp corners,
+    boxrule=0.4pt,
+    before skip=0pt,
+    after skip=0pt,
+    top=1mm,
+    bottom=1mm,
+]
+\footnotesize
+\textbf{Final prompt on GSM8K (real log, $\varepsilon{\leq}1.0$):} \textit{``You are a math tutor. Solve the question carefully and show reasoning: \textcolor{green!50!black}{\{question\}}\, (Provide detailed reasoning and justification.) (Be concise and accurate.)''} \quad \textcolor{green!50!black}{\textbf{[\{question\} preserved]}} \\[0.3em]
+\textbf{Mechanism:} Prompt-level mutations operate on complete strings; population diversity (6 prompts/round) supplies alternatives after noise-induced rank inversions. \textbf{Result:} 88.1\% (vs.\ DP-OPT 49.5\%), $\sim$9$\times$ lower std, and 0/30 operational failures.
+\end{tcolorbox}
+
+\vspace{0.8em}
+\captionsetup{aboveskip=2pt,belowskip=0pt}
+\caption{\textbf{DP-OPT failure modes vs.\ DP-ES robustness on GSM8K (real trajectory data).} Top: selected prompts at each iteration of an actual DP-OPT run (seed~42) lose the \texttt{\{question\}} placeholder as the search progresses. Middle: the noise-driven suboptimal-selection mode observed in 14 of 19 failed runs (Appendix~\ref{sec:appendix:dpopt_failures}). Bottom: the final DP-ES prompt on the same task with the placeholder preserved by construction.}
+\label{fig:dpopt_failures_summary}
+\endgroup
+\vspace{-0.5em}
+\end{figure*}

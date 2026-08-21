@@ -1,0 +1,32 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Large Language Models (LLMs) have demonstrated remarkable capabilities through in-context learning \cite{brown2020language,ouyang2022training}, yet their performance heavily relies on carefully crafted prompts \cite{liu2023pre}. Automatic prompt optimization \cite{yuksekgonul2024textgrad,yang2023large} can bridge this gap, but when the optimization data are sensitive (e.g., patient records, financial logs), the optimizer can memorize and expose private information, as evidenced by recent membership inference and extraction attacks \cite{wang2024decodingtrust,rahman2024sok,fu2023practical}. For instance, a naive optimizer might generate a prompt like \textit{``Remember how patient \#12847 had atrial fibrillation...''}, directly violating privacy. Any optimizer intended for such settings must therefore satisfy formal \textbf{Differential Privacy (DP)} guarantees \cite{dwork2006calibrating}---and, crucially, the optimization mechanism itself must remain robust under the noise that DP introduces, which is the question we focus on in this work.
+
+\noindent\textbf{The Challenge: Task Complexity and Privacy Budgets.}
+Applying DP to prompt optimization is non-trivial due to the discrete nature of text. Recent work like DP-OPT \cite{hong2024dpopt} uses histogram-based token generation with the exponential mechanism. Other approaches apply DP to in-context learning via private few-shot generation or nearest neighbor retrieval \cite{tang2024privacy,koskela2025differentially}, but they rely on additional retrieval or embedding machinery. While DP-OPT is effective on simple tasks, we identify critical limitations on complex reasoning: our analysis of 30 DP-OPT runs reveals a \textbf{63\% failure rate} on GSM8K (Appendix~\ref{sec:appendix:dpopt_failures}, Table~\ref{tab:dpopt_full_failures}), with systematic issues including template damage (destruction or partial loss) and suboptimal selection. This fragility stems from token-level myopia and non-backtracking search, which become catastrophic under tight privacy constraints.
+
+\noindent\textbf{Private Evolution Perspective.}
+Private Evolution (PE) is a training-free DP paradigm for data synthesis via APIs \cite{lin2024dpsda_images,xie2024dpsda_text,lin2025simpe}. Its core advantage is structural: only low-sensitivity evaluation touches private data, while exploration/generation and selection over privatized scores are post-processing. This yields a decoupling between exploration and privacy expenditure---increasing the number or strength of mutations improves search without consuming additional privacy budget. DP-ES is a prompt-optimization instantiation of this PE principle.
+
+
+\input{figures/dpes_overview}
+
+
+
+
+\noindent\textbf{Our Contribution: DP-ES.}
+We frame this work as a \emph{diagnostic and methodological} contribution for DP prompt optimization: we systematically characterize the failure modes of token-level DP construction under tight privacy budgets and propose \textbf{Differentially Private Evolution Strategies (DP-ES)}, a structurally cleaner alternative. Unlike methods that build prompts token by token from privately aggregated counts, DP-ES maintains a population of full prompts that evolve over time. The key design choice is to decouple exploration from privacy consumption: using LLMs to generate semantic mutations consumes \textbf{zero privacy budget} (by the post-processing property), allowing the scarce privacy budget to be allocated strictly to sampled-Gaussian evaluation.
+
+Our contributions are:
+\vspace{-0.3em}
+\begin{enumerate}[leftmargin=*,itemsep=-0.3em]
+    \item \textbf{Failure-mode diagnosis:} A 30-run analysis of DP-OPT on GSM8K identifying \emph{template damage} (placeholder loss, 26\% of failures) and \emph{noise-driven suboptimal selection} (74\%) as structural failure modes of token-level DP prompt construction, supported by concrete trajectory evidence (Section~\ref{sec:results}).
+    \item \textbf{Method:} A structurally cleaner evolution-based DP prompt optimizer with privacy-free mutations, sampled-Gaussian scoring under RDP accounting, and deterministic or Gumbel-smoothed post-processing selection.
+    \item \textbf{Empirical robustness:} 0/30 operational failures on GSM8K (vs.\ 19/30 for DP-OPT), with $\sim$9$\times$ lower standard deviation, plus strong or competitive results on MedQA, BANKING77, and Alpaca under a conservative $(\varepsilon{\leq}1,\delta{=}10^{-5})$ guarantee.
+    \item \textbf{Efficiency:} 2.5$\times$ faster wall-clock runtime and 3.3$\times$ fewer logged private-data call groups than DP-OPT on GSM8K, with an explicit generation-vs-evaluation cost decomposition.
+    \item \textbf{Privacy evidence:} A reproducible RDP accounting calculation and noise-distribution checks, plus a 200-profile synthetic exact-match stress test (0 PII strings found for DP-ES vs.\ 40 for an adversarial non-DP control).
+\end{enumerate}
+
+\noindent\textbf{Scope of Empirical Evidence.}
+Our experiments establish DP-ES as a \emph{structurally more robust DP prompt optimizer} than token-level alternatives, especially on tasks where prompt structure is critical. They do not by themselves validate deployment on genuinely sensitive, non-saturated datasets. The formal $(\varepsilon,\delta)$-DP guarantee bounds record-level leakage independently of the benchmark, while the implementation checks and exact-match stress test provide complementary diagnostics. We make these scope boundaries explicit in the Limitations section.

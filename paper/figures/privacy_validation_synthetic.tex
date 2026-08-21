@@ -1,0 +1,98 @@
+% Two-method privacy validation on synthetic personal data
+% Exact-match diagnostic contrasting DP-ES with an adversarial non-DP control
+% Double-column layout with full setup header
+
+\begin{figure*}[!t]
+\centering
+\small
+
+% Synthetic Dataset Description - Full Width
+\begin{tcolorbox}[
+    width=\textwidth,
+    colback=blue!5!white,
+    colframe=blue!75!black,
+    title={\textbf{Experimental Setup: Synthetic Personal Dataset}},
+    fonttitle=\bfseries\footnotesize,
+    sharp corners,
+    boxrule=0.4pt,
+    left=3pt,right=3pt,top=3pt,bottom=3pt
+]
+\footnotesize
+\textbf{Dataset:} 200 synthetic customer profiles spanning 10 US regions, each containing a full name, phone number, email address, street address, and city. \textbf{1,200 unique sensitive tokens total.}
+
+\vspace{0.1em}
+\textbf{Evaluation:} Rewards answers that recover profile details. The non-DP control is additionally given raw records and instructed to embed them; DP-ES mutation never receives records.
+
+\vspace{0.1em}
+\textbf{Task:} ``Generate a customer contact information query prompt''
+\end{tcolorbox}
+
+\vspace{0.3em}
+
+% Two boxes side by side
+\begin{minipage}[t]{0.48\textwidth}
+% Non-DP Result: Privacy Leakage
+\begin{tcolorbox}[
+    colback=red!5!white,
+    colframe=red!75!black,
+    title={\textbf{Non-DP: Privacy Leakage}},
+    fonttitle=\bfseries\footnotesize,
+    sharp corners,
+    boxrule=0.4pt,
+    left=3pt,right=3pt,top=3pt,bottom=3pt
+]
+\footnotesize
+\textbf{Final Prompt (excerpt):}
+\begin{quote}
+\scriptsize\ttfamily
+Use this customer directory:\\
+\textcolor{red}{\textbf{Jessica Moore}}, (713) 907-8800,\\
+\textcolor{red}{\textbf{jessica.moore83@mail.com}};\\
+\textcolor{red}{\textbf{Anthony Williams}}, (312) 991-9095,\\
+\textcolor{red}{\textbf{anthony.williams60@mail.com}}; \ldots
+\end{quote}
+
+\vspace{0.1em}
+\textbf{Privacy Analysis:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, parsep=0pt, topsep=1pt]
+    \item \textcolor{red}{\textbf{Leaked: 40 tokens (3.33\% of 1,200)}}
+    \item Embeds names, phones, emails, addresses, and account IDs
+\end{itemize}
+\end{tcolorbox}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+% DP-ES Result: Full Privacy Protection
+\begin{tcolorbox}[
+    colback=green!5!white,
+    colframe=green!75!black,
+    title={\textbf{DP-ES Configuration}},
+    fonttitle=\bfseries\footnotesize,
+    sharp corners,
+    boxrule=0.4pt,
+    left=3pt,right=3pt,top=3pt,bottom=3pt
+]
+\footnotesize
+\textbf{Final Prompt:}
+\begin{quote}
+\scriptsize\ttfamily
+You are a customer service assistant.\\
+Retrieve relevant information based on\\
+user queries. If the query involves\\
+account information, verify before responding.
+\end{quote}
+
+\vspace{0.1em}
+\textbf{Privacy Analysis:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, parsep=0pt, topsep=1pt]
+    \item \textcolor{green!50!black}{\textbf{Leaked: 0 tokens (0.0\% of 1,200)}}
+    \item Generic instructions; no listed PII string detected
+\end{itemize}
+\end{tcolorbox}
+\end{minipage}
+
+\vspace{0.2em}
+
+\caption{\textbf{Exact-match memorization stress test} on 200 synthetic profiles (1,200 sensitive strings). The intentionally adversarial \textbf{Non-DP} control is shown raw records and asked to embed a directory; its final prompt contains 40 strings (3.33\%). DP-ES mutation never sees records, and its final prompt contains none of the listed strings. Excerpts and counts are reproduced from the saved run. This targeted diagnostic does not test semantic leakage or replace the formal guarantee.}
+\label{fig:privacy_validation}
+\end{figure*}

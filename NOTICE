@@ -1,0 +1,6 @@
+DP-ES contains a clean, standalone release of code developed for the paper
+"DP-ES: Differentially Private Evolution Strategies for Prompt Optimization."
+
+The project originated from experiments built on TextGrad. The MIT license
+and original Zou Group copyright notice are retained in LICENSE. The public
+DP-ES package does not vendor TextGrad and has no runtime dependency on it.

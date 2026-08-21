@@ -1,0 +1,135 @@
+\documentclass[11pt]{article}
+
+% ACL style file for the camera-ready version
+\usepackage[final]{acl}
+
+% Standard packages
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+% \usepackage{inconsolata}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{tcolorbox}
+
+% Math packages
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+% Additional packages for tables and formatting
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{enumitem}
+\usepackage[normalem]{ulem}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}{Definition}
+
+% Custom commands
+\newcommand{\eps}{\varepsilon}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\calM}{\mathcal{M}}
+\newcommand{\calD}{\mathcal{D}}
+\newcommand{\calP}{\mathcal{P}}
+\newcommand{\calO}{\mathcal{O}}
+\newcommand{\blue}[1]{\textcolor{blue}{#1}}
+
+\title{DP-ES: Differentially Private Evolution Strategies for Prompt Optimization}
+
+\author{
+\textbf{Ziniu Liu}\textsuperscript{1},
+\textbf{Aiping Li}\textsuperscript{1,*},
+\textbf{Yue Han}\textsuperscript{1},
+\textbf{Han Yu}\textsuperscript{1},\\
+\textbf{Junjian Zhang}\textsuperscript{1},
+\textbf{Dong Zhu}\textsuperscript{1},
+\textbf{Changjian Li}\textsuperscript{1},
+\textbf{Shiqiang Zhang}\textsuperscript{2}\\
+\textsuperscript{1}National University of Defense Technology\\
+\textsuperscript{2}CRRC Zhuzhou Electric Locomotive Research Institute Co., Ltd.,\\
+China Academy of Railway Sciences\\
+\small{\textsuperscript{*}Corresponding author: \href{mailto:liaiping@nudt.edu.cn}{liaiping@nudt.edu.cn}}
+}
+
+\begin{document}
+\maketitle
+
+\input{sections/abstract}
+
+\input{sections/introduction}
+
+\input{sections/related_work}
+
+\input{sections/methodology}
+
+\input{sections/experiments}
+
+\input{sections/results}
+
+\input{sections/privacy_analysis}
+
+\input{sections/conclusion}
+
+\section*{Limitations}
+
+We are explicit about the boundaries of what this work establishes.
+
+\noindent \textbf{Empirical Scope: No Sensitive-Data Deployment Validation.}
+Our experiments establish that DP-ES is a structurally more robust DP prompt optimizer than token-level alternatives on benchmarks where prompt structure matters. They do \textit{not} validate end-to-end deployment on genuinely sensitive, non-saturated datasets (e.g., real clinical records, financial logs). Such validation would require benchmarks that combine record-level sensitivity with non-trivial semantic reasoning, which the current public benchmark landscape does not provide. The formal $(\varepsilon,\delta)$-DP guarantee, by construction, bounds record-level leakage independent of the benchmark, but a direct sensitive-data deployment study remains future work.
+
+\noindent \textbf{MedQA Ceiling Effect.}
+DP-ES reaches 99.7\% on the 200-question MedQA subset, with the Non-DP baseline saturating at 100.0$\pm$0.0. This near-ceiling performance limits the discriminative power of MedQA for studying privacy-utility trade-offs at $\varepsilon{=}1.0$; the 6.2~pp improvement over DP-OPT on this saturated regime is informative but should not be over-interpreted as evidence for a non-trivial privacy-utility frontier on medical QA more broadly. A non-saturated medical benchmark (e.g., a harder open-ended clinical reasoning task) would provide stronger evidence.
+
+\noindent \textbf{Privacy Attack Coverage.}
+The 200-profile synthetic memorization stress test (Section~\ref{sec:privacy_analysis}) measures direct or near-verbatim sensitive-string leakage against an intentionally adversarial non-DP control. It does \textit{not} test paraphrased memorization, rare-attribute disclosure, record reconstruction, or membership inference. Moreover, the mutation LLM can reproduce information already present in its parametric memory; DP-ES bounds the incremental influence of the private optimization dataset, not memorization inherited from pretraining. The formal $(\varepsilon,\delta)$-DP guarantee is attack-agnostic, but a direct empirical attack suite comparing DP-ES against DP-OPT under matched bounds would provide useful complementary evidence and remains future work.
+
+\noindent \textbf{Efficiency Reporting Scope.}
+The cost decomposition by call purpose (Appendix~\ref{sec:appendix:efficiency}, Table~\ref{tab:efficiency_breakdown}) is from a representative single-seed run on a 200-sample validation set. Aggregate wall-clock numbers across the full 1{,}319-sample test set are reported separately (Table~\ref{tab:efficiency_full}); token-level and call-purpose splits at full aggregate scale are not yet released. We report the most granular reproducible numbers we have and treat aggregate token-level reporting as future work.
+
+\noindent \textbf{Task Diversity.}
+We evaluate on four tasks (GSM8K, MedQA, BANKING77, Alpaca) covering math reasoning, medical QA, intent classification, and instruction-following. Additional benchmarks (e.g., summarization, code generation, open-ended clinical reasoning) would further characterize cross-domain generalization.
+
+\noindent \textbf{Task-Dependent Advantage.}
+DP-ES's strongest gains over DP-OPT are on complex reasoning tasks (GSM8K: +38.6 pp, MedQA: +6.2 pp). On well-structured classification (BANKING77) and instruction-following (Alpaca), both methods perform comparably, suggesting that DP-ES's population-based exploration is most beneficial when the prompt search space is large and structured prompts are critical.
+
+\noindent \textbf{Privacy Budget Sweeps.}
+Our verified experiments establish the common conservative bound $\varepsilon\leq1$ rather than a densely sampled privacy--utility frontier. Re-running all methods with noise recalibrated to several exact RDP targets would better characterize the trade-off.
+
+\noindent \textbf{Theoretical Analysis of Task Complexity.}
+We empirically observe that task complexity is a key determinant of the success of DP optimization. A formal theoretical framework linking prompt search space characteristics to privacy budget requirements is still needed.
+
+\noindent \textbf{Future Work.}
+Beyond the scope items above, promising directions include adaptive population sizing, multi-objective optimization (utility, privacy, stability), and federated DP-ES for distributed sensitive data settings.
+
+\section*{Ethics Statement}
+
+This work develops differentially private (DP) prompt-optimization mechanisms motivated by settings where the underlying optimization data may be sensitive. Our empirical evaluation is conducted on public benchmarks; the considerations below concern both this study and any downstream use of the released method.
+
+\noindent \textbf{Privacy Scope:} DP-ES provides formal ($\varepsilon, \delta$)-DP guarantees for prompt optimization under correct implementation and accounting. The reported implementation diagnostics and exact-match stress test do not certify DP or cover downstream deployment risks beyond the mechanism.
+
+\noindent \textbf{Data Use:} We use public benchmarks and do not collect new personal data. Applications to real sensitive data should follow institutional review, access control, and data governance requirements.
+
+\noindent \textbf{Dual-Use Concerns:} As with any optimization technique, DP-ES could be misused to refine harmful applications. Responsible deployment should include access control, monitoring, and safety filtering.
+
+\noindent \textbf{Transparency and Reproducibility:} We provide code and privacy accounting details to enable verification of claims and independent audits.
+
+\bibliography{references}
+
+\clearpage
+\appendix
+\input{appendix}
+
+\end{document}

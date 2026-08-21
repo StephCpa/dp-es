@@ -1,0 +1,48 @@
+\section{Related Work}
+\label{sec:related}
+
+\noindent\textbf{Prompt Optimization.}
+Gradient-free methods such as APE \cite{zhou2023large} and OPRO \cite{yang2023large} search over discrete prompt candidates using LLM-generated variations, while gradient-based approaches like TextGrad \cite{yuksekgonul2024textgrad} use LLM feedback as differentiable signals. Both families optimize prompts effectively but assume unrestricted access to training data with no privacy guarantees \cite{edemacu2024privacy}, making them unsuitable for sensitive domains such as healthcare, finance, and education where data protection is legally mandated.
+
+\noindent\textbf{Differential Privacy in Machine Learning.}
+DP-SGD \cite{abadi2016deep} and PATE \cite{papernot2018scalable} provide formal $(\varepsilon,\delta)$-DP guarantees for continuous model parameters during training. DP-LoRA \cite{liu2024differentially,frery2025private} extends this to parameter-efficient fine-tuning of LLMs, achieving strong performance with reduced memory overhead. However, all these methods require access to model weights, precluding their use with black-box API-only LLMs---the dominant deployment mode for state-of-the-art models such as GPT-4 and DeepSeek.
+
+\noindent\textbf{DP Prompt Optimization.}
+For discrete prompts over black-box LLMs, DP-OPT \cite{hong2024dpopt} uses histogram-based token generation with the exponential mechanism, constructing prompts token by token from privately aggregated counts. While effective on classification and factual QA, this greedy token-level approach suffers from template damage and suboptimal selection on complex reasoning tasks (63\% failure rate on GSM8K; Section~\ref{sec:results}), as noise accumulates across sequential token decisions without the ability to backtrack.
+
+\noindent\textbf{Other Approaches.}
+Other directions include DP few-shot demonstration generation for in-context learning \cite{tang2024privacy}, which privately selects exemplars but cannot optimize the instruction prompt itself; private retrieval augmentation \cite{koskela2025differentially}, which protects retrieval queries but inherits the limitations of fixed prompt templates; and PromptDPSGD \cite{Duan2023FlocksOS}, which applies DP-SGD to continuous soft prompt embeddings but requires white-box model access and struggles on smaller models (Appendix~\ref{sec:appendix:local}).
+
+\noindent\textbf{Private Evolution.}
+Private Evolution (PE) \cite{lin2024dpsda_images,xie2024dpsda_text,lin2025simpe} is a training-free DP framework originally developed for data synthesis via APIs. Its key structural advantage is that only a low-sensitivity evaluation step touches private data, while API-based generation is pure post-processing. This creates a favorable decoupling: exploration can be arbitrarily rich without consuming privacy budget. DP-ES adapts this principle from data synthesis to prompt optimization, inheriting the favorable privacy-exploration trade-off while introducing population-based search over the discrete prompt space.
+
+\noindent\textbf{Evolution Strategies and DP.}
+Evolution strategies (ES) \cite{rechenberg1973evolutionsstrategie} are a family of derivative-free optimization algorithms that maintain and evolve populations of candidate solutions. ES have driven advances in neural architecture search \cite{real2019regularized} and reinforcement learning \cite{jaderberg2017population}, demonstrating strong performance in high-dimensional, noisy search spaces. While prior work has combined DP with optimization algorithms such as ERM \cite{chaudhuri2011differentially}, DP-ES is the first to leverage evolutionary search for DP prompt optimization in the discrete text domain. The population-based design provides natural robustness to noise-induced regressions---a critical advantage under tight privacy budgets where evaluation noise is substantial.
+
+\noindent\textbf{Privacy Auditing.}
+Empirical privacy attacks and audits can reveal implementation errors but cannot certify DP from a finite number of trials \cite{nasr2021adversary,jagielski2020auditing}. We therefore base our guarantee on mechanism-level RDP accounting and use noise checks and an exact-match memorization stress test only as complementary diagnostics (Section~\ref{sec:privacy_analysis}).
+
+\noindent\textbf{Positioning of DP-ES.}
+Table~\ref{tab:comparison} summarizes the landscape. DP-ES uniquely combines evolutionary exploration with sampled-Gaussian scoring and post-processing selection, filling the gap for a robust, black-box-compatible DP prompt optimization method that scales across diverse task complexities---from structured classification to multi-step reasoning.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Method} & \textbf{Priv.} & \textbf{Disc.} & \textbf{Mechanism} \\
+\midrule
+TextGrad & \texttimes & \checkmark & LLM gradients \\
+OPRO & \texttimes & \checkmark & LLM scoring \\
+\midrule
+DP-SGD & \checkmark & \texttimes & Gaussian noise \\
+DP-OPT & \checkmark & \checkmark & Histogram + Exp \\
+\midrule
+\textbf{DP-ES} & \checkmark & \checkmark & \textbf{Evol. + Gauss} \\
+\bottomrule
+\end{tabular}
+\caption{Comparison of prompt optimization methods. DP-ES uniquely combines evolution strategies with DP for discrete prompts.}
+\label{tab:comparison}
+\end{table}
+\vspace{-1em}

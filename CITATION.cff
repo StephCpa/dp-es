@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use DP-ES, please cite the EMNLP 2026 paper."
+title: "DP-ES: Differentially Private Evolution Strategies for Prompt Optimization"
+type: software
+version: 0.1.0
+date-released: 2026-08-21
+repository-code: "https://github.com/StephCpa/dp-es"
+license: MIT
+authors:
+  - family-names: Liu
+    given-names: Ziniu
+  - family-names: Li
+    given-names: Aiping
+  - family-names: Han
+    given-names: Yue
+  - family-names: Yu
+    given-names: Han
+  - family-names: Zhang
+    given-names: Junjian
+  - family-names: Zhu
+    given-names: Dong
+  - family-names: Li
+    given-names: Changjian
+  - family-names: Zhang
+    given-names: Shiqiang

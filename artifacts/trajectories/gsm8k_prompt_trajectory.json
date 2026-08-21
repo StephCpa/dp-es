@@ -1,0 +1,31 @@
+{
+  "description": "Prompt-only excerpts underlying the main-paper DP-OPT trajectory case study.",
+  "task": "GSM8K",
+  "seed": 42,
+  "dp_opt": {
+    "run_accuracy": 0.91,
+    "candidate_prompts_without_question_placeholder": 21,
+    "candidate_prompts_total": 33,
+    "selected": [
+      {
+        "iteration": 0,
+        "prompt": "Carefully solve the following math question and provide a clear explanation of your reasoning: {question}",
+        "has_question_placeholder": true
+      },
+      {
+        "iteration": 1,
+        "prompt": "Solve the math problem step-by-step, ensuring each step is clearly explained and justified before proceeding to the next.",
+        "has_question_placeholder": false
+      },
+      {
+        "iteration": 2,
+        "prompt": "Present a structured solution by enumerating each step, explaining the purpose of that step, and confirming its correctness before continuing.",
+        "has_question_placeholder": false
+      }
+    ]
+  },
+  "dp_es": {
+    "final_prompt": "You are a math tutor. Solve the question carefully and show reasoning:\n{question}\n\n(Provide detailed reasoning and justification.)\n\n(Be concise and accurate.)",
+    "has_question_placeholder": true
+  }
+}
