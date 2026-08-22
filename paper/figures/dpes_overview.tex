@@ -1,60 +1,6 @@
 \begin{figure*}[t]
 \centering
-\begin{minipage}[t]{0.48\textwidth}
-\begin{tcolorbox}[
-  colback=blue!4!white,colframe=blue!65!black,
-  title={\textbf{Phase 1: Privacy-Free Exploration}},
-  fonttitle=\bfseries,sharp corners,boxrule=0.5pt,left=4pt,right=4pt,top=3pt,bottom=3pt]
-\small A public or previously privatized parent prompt is sent to the mutation LLM, which produces $K$ complete-prompt children. Neither private records nor record-derived feedback are exposed.
-\end{tcolorbox}
-\vspace{-0.25em}
-\begin{center}$\Downarrow$\end{center}
-\vspace{-0.65em}
-\begin{tcolorbox}[
-  colback=orange!5!white,colframe=orange!75!black,
-  title={\textbf{Phase 2: Sampled-Gaussian Scoring}},
-  fonttitle=\bfseries,sharp corners,boxrule=0.5pt,left=4pt,right=4pt,top=3pt,bottom=3pt]
-\small For each candidate, sample $B\subset\calD$ with $|B|=b$, clip the batch-mean utility to sensitivity $C_{\mathrm{clip}}/b$, and release
-$\widetilde{s}_p=s_p+\mathcal{N}(0,(zC_{\mathrm{clip}}/b)^2)$.
-These $TK$ releases are composed with without-replacement RDP accounting.
-\end{tcolorbox}
-\vspace{-0.25em}
-\begin{center}$\Downarrow$\end{center}
-\vspace{-0.65em}
-\begin{tcolorbox}[
-  colback=green!5!white,colframe=green!55!black,
-  title={\textbf{Phase 3: Post-Processing Selection}},
-  fonttitle=\bfseries,sharp corners,boxrule=0.5pt,left=4pt,right=4pt,top=3pt,bottom=3pt]
-\small Select parents by deterministic or Gumbel-smoothed top-$k$ over the privatized scores. Selection and all subsequent mutations add no privacy loss.
-\end{tcolorbox}
-\end{minipage}
-\hfill
-\begin{minipage}[t]{0.49\textwidth}
-\centering
-\small
-\setlength{\tabcolsep}{3.5pt}
-\renewcommand{\arraystretch}{1.22}
-\begin{tabular}{@{}p{0.22\linewidth}p{0.33\linewidth}p{0.35\linewidth}@{}}
-\toprule
- & \textbf{DP-OPT} & \textbf{DP-ES} \\
-\midrule
-Search unit & One token at a time & Population of complete prompts \\
-Private access & Repeated private histogram queries during construction & Sampled utility evaluation only \\
-Privatization & Limited-domain / exponential-mechanism token release & Gaussian release of clipped batch means \\
-Selection & Irreversible token choice & Top-$k$ over privatized scores (post-processing) \\
-Recovery & No backtracking after a token decision & Alternative complete prompts persist across rounds \\
-Composition & Across sequential token releases & Across $TK$ sampled-Gaussian score releases \\
-\bottomrule
-\end{tabular}
-
-\vspace{0.6em}
-\begin{tcolorbox}[
-  colback=gray!5!white,colframe=black!55,
-  title={\textbf{Structural distinction}},
-  fonttitle=\bfseries,sharp corners,boxrule=0.5pt,left=4pt,right=4pt,top=3pt,bottom=3pt]
-\small DP-ES moves semantic exploration outside private-data access. Privacy expenditure depends on the number and calibration of score releases, not on the number or richness of LLM mutations.
-\end{tcolorbox}
-\end{minipage}
-\caption{\textbf{DP-ES workflow and mechanism-level contrast with DP-OPT.} Only sampled-Gaussian scoring accesses the private dataset; mutation and selection are post-processing.}
+\includegraphics[width=\textwidth]{figures/DPES_Figure1_v2.pdf}
+\caption{\textbf{DP-ES workflow and mechanism-level contrast with DP-OPT.} Only sampled-Gaussian scoring accesses the private dataset. LLM mutation and deterministic or Gumbel-smoothed top-$K$ selection operate without further private-data access and add no privacy loss. Mechanism rows summarize canonical DP-OPT; the bottom panel reports our black-box adaptation's GSM8K mean and standard deviation across 30 runs without imposing a post-hoc failure threshold.}
 \label{fig:overview}
 \end{figure*}

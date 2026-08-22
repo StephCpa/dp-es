@@ -67,7 +67,7 @@ DP-ES (Algorithm~\ref{alg:dpes}) employs an evolution strategy with three key co
     \ENDFOR
     \STATE $\mathcal{P}_t \leftarrow \mathcal{P}_{t-1} \cup \{$all children$\}$
 
-    \STATE \textcolor{blue}{// Phase 2: DP evaluation (consumes $\eps_{\text{eval}}$)}
+    \STATE \textcolor{blue}{// Phase 2: Sampled-Gaussian scoring (RDP-accounted)}
     \FOR{each $p \in \mathcal{P}_t$}
         \STATE Sample $B\subset\calD$, $|B|=b$; $s_p = \frac{1}{b}\sum_{i\in B}\mathbb{1}[\text{LLM}(p,x_i)=y_i]$
         \STATE Clip: $s'_p = \text{clip}(s_p, [0, C_{\text{clip}}])$ \COMMENT{$C_{\text{clip}}=1.0$}
@@ -91,14 +91,14 @@ DP-ES (Algorithm~\ref{alg:dpes}) employs an evolution strategy with three key co
 \noindent\textbf{Proposition~\thetheorem\ (Mutation Privacy-Freeness).}
 \textit{Let $\text{Mutate}: \calP \to \calP$ be a function that generates a new prompt from a parent prompt using an LLM, without accessing the private dataset $\calD$. Then Mutate consumes zero privacy budget.}
 
-\noindent\textbf{Proof.} See Appendix~\ref{sec:appendix:proofs}.
+\noindent\textbf{Proof.} See Appendix~\ref*{sec:appendix:proofs}.
 
 \refstepcounter{theorem}\label{prop:decoupled}
 \noindent\textbf{Proposition~\thetheorem\ (Decoupled Exploration).}
 \textit{If mutation does not access $\calD$, then the privacy loss of DP-ES depends only on the sampled-Gaussian score releases and is independent of the number or strength of mutations per iteration.}
-\noindent\textbf{Proof.} See Appendix~\ref{sec:appendix:proofs}.
+\noindent\textbf{Proof.} See Appendix~\ref*{sec:appendix:proofs}.
 
-\noindent \textbf{Mutation strategies:} We implement 3 modes (EXPLORE, EXPLOIT, BALANCED); details and prompt templates are provided in Appendix~\ref{sec:appendix:exp}.
+\noindent \textbf{Mutation strategies:} We implement 3 modes (EXPLORE, EXPLOIT, BALANCED); details and prompt templates are provided in Appendix~\ref*{sec:appendix:exp}.
 
 \noindent\textbf{DP Evaluation via Gaussian Mechanism.}
 After mutation, each candidate is evaluated on a uniformly sampled batch $B\subset\calD$ of size $b$. Its score is the mean of clipped per-record utilities:
