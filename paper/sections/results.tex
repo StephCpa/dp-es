@@ -36,8 +36,8 @@ DP-OPT & 49.5{\scriptsize$\pm$28.5} & 93.5{\scriptsize$\pm$12.0} & \textbf{75.3}
 \input{figures/dpopt_failures_summary}
 \endgroup
 
-\noindent\textbf{DP-OPT Failure Analysis.}
-We define an operational failure as a run whose final GSM8K accuracy is at most 55\%, the upper end of the low-accuracy cluster in our retrospective 30-run diagnosis. We identify \textbf{19 failures (63\%)} with two systematic modes (Figure~\ref{fig:dpopt_failures_summary}): (1) template damage from greedy token generation (26\% of failures; complete or partial placeholder loss yields 0--25\% accuracy), and (2) suboptimal histogram-based selection (74\%; 35--55\% accuracy). Figure~\ref{fig:dpopt_failures_summary} separately reproduces a diagnostic trajectory from a \emph{high-accuracy} seed (91\%): 64\% of its candidate prompts and 2 of 3 selected prompts lose \texttt{\{question\}}. This trajectory is not one of the 19 operational failures; it shows that placeholder damage occurs within the search process even when the final run recovers. DP-ES has 0/30 operational failures; prompt-level mutations and population-based exploration allow recovery from noise-induced regressions (Appendix~\ref{sec:appendix:dpopt_failures}).
+\noindent\textbf{DP-OPT Instability and Trajectory Analysis.}
+Across 30 GSM8K runs, DP-OPT obtains $49.5{\pm}28.5\%$, compared with DP-ES's $88.1{\pm}3.2\%$. Figure~\ref{fig:dpopt_failures_summary} reproduces a diagnostic DP-OPT trajectory from a \emph{high-accuracy} seed (91\%): 21/33 candidate prompts and 2/3 selected prompts omit \texttt{\{question\}}. The evaluator explicitly appends the question text when this placeholder is absent, so omission is not intrinsically a zero-accuracy event; we therefore treat it as evidence of \emph{template drift}, not as a failure label. The trajectory nonetheless exposes a structural weakness of unconstrained token-level construction, while DP-ES's complete-prompt population retains multiple alternatives when noisy scores perturb a ranking (Appendix~\ref{sec:appendix:dpopt_failures}).
 
 
 

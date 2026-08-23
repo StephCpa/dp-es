@@ -17,10 +17,10 @@
 
 \subsection{Baselines}
 
-\textbf{DP-OPT} \cite{hong2024dpopt}: State-of-the-art DP prompt optimization using histogram-based token generation with the exponential mechanism. We use the official implementation \footnote{\url{https://github.com/VITA-Group/DP-OPT}}.
+\textbf{DP-OPT (black-box adaptation)} \cite{hong2024dpopt}: DP-OPT's canonical method uses histogram-based token generation with the exponential mechanism. Because the original implementation targets a white-box local model, our API comparison uses a black-box adaptation that preserves private candidate evaluation and exponential-mechanism selection but is not an exact reproduction of the original Vicuna-based implementation. We provide the original implementation link for reference\footnote{\url{https://github.com/VITA-Group/DP-OPT}} and interpret the resulting numbers as an adapted baseline.
 
 \noindent \textbf{Non-DP}: Standard prompt optimization without privacy constraints, implemented using the TextGrad\footnote{\url{https://github.com/zou-group/textgrad}} \cite{yuksekgonul2024textgrad}
- method. This provides an upper bound on achievable performance.
+ method. This serves as a non-private reference rather than a formal upper bound, since optimization procedures can differ in search behavior and local optima.
 
 \noindent \textbf{PromptDPSGD (local)} \cite{Duan2023FlocksOS}: DP-SGD on soft prompt embeddings. We run PromptDPSGD with local Qwen-2.5-7B, prompt length 20, 10 epochs, learning rate 0.005, max grad norm 1.0, batch size 2 or 4. Results are summarized in Appendix~\ref{sec:appendix:local}.
 
@@ -57,7 +57,7 @@
 \subsection{Implementation}
 
 \textbf{LLM API:} We use DeepSeek-V3.2 (deepSeek-chat) via the OpenAI-compatible API\footnote{\url{https://api.deepseek.com/v1}}.
-
+    
 \noindent \textbf{Privacy accounting:} We use the \texttt{autodp} library \cite{autodp} with the R\'enyi DP accountant for tight composition bounds.
 
 \noindent \textbf{Reproducibility:} We report run counts with each result (30 runs for the GSM8K failure diagnosis, five seeds for the selector ablation, and three seeds for the validation studies). Code, prompts, accountant inputs, and evaluation scripts accompany the final paper.
@@ -239,35 +239,32 @@ The resulting efficiency profile is best described as \textit{trade tokens for r
 \label{tab:efficiency_breakdown}
 \end{table*}
 
-\subsection{DP-OPT Detailed Failure Analysis}
+\subsection{DP-OPT Stability and Trajectory Analysis}
 \label{sec:appendix:dpopt_failures}
 
-\noindent We conducted a comprehensive analysis of 30 DP-OPT experiments on GSM8K and identified 19 anomalous runs (63\% failure rate) exhibiting systematic failure patterns. Two modes dominate among the failures: \textbf{template damage} (destruction or partial loss; 5/19, 26\%, typical accuracy $\leq$25\%) and \textbf{suboptimal selection} (14/19; 74\%, typical accuracy 35--55\%); in contrast, DP-ES shows \textbf{0/30} observed failures. Table~\ref{tab:dpopt_full_failures} categorizes these failures by severity. The main-text visualization (Figure~\ref{fig:dpopt_failures_summary}) reproduces an actual DP-OPT trajectory alongside the aggregate failure counts.
+\noindent Across 30 GSM8K runs, DP-OPT achieves $49.5{\pm}28.5\%$, whereas DP-ES achieves $88.1{\pm}3.2\%$. We use these distributional statistics directly rather than imposing a post-hoc accuracy threshold to label runs as failures. The main-text visualization (Figure~\ref{fig:dpopt_failures_summary}) reproduces an actual DP-OPT trajectory and illustrates two mechanisms consistent with the observed instability: prompt-template drift during token-level construction and irreversible propagation of noisy ranking decisions.
 
 \begin{table*}[t]
 \centering
 \small
-\begin{tabular}{llcc}
+\begin{tabular}{lccc}
 \toprule
-\textbf{Severity} & \textbf{Description} & \textbf{Count} & \textbf{Acc Range} \\
+\textbf{Method / diagnostic} & \textbf{Runs} & \textbf{Accuracy} & \textbf{Observed structure} \\
 \midrule
-Severe & Template destroyed & 2 & 0.0\% \\
-Moderate & Partial template loss & 3 & 12.5-25.0\% \\
-Minor & Suboptimal selection & 14 & 35.0-55.0\% \\
-\midrule
-\textbf{Total Failures} & & \textbf{19/30} & -- \\
-\textbf{DP-ES Failures} & & \textbf{0/30} & -- \\
+DP-OPT aggregate & 30 & $49.5{\pm}28.5\%$ & high run-to-run variance \\
+DP-ES aggregate & 30 & $88.1{\pm}3.2\%$ & lower run-to-run variance \\
+DP-OPT seed 42 trajectory & 1 & 91.0\% & 21/33 candidates omit \texttt{\{question\}} \\
 \bottomrule
 \end{tabular}
-\caption{\textbf{Full DP-OPT Failure Breakdown.} 14 of 19 failures share suboptimal selection; template damage (destruction or partial loss) is the most severe mode.}
-\label{tab:dpopt_full_failures}
+\caption{\textbf{DP-OPT stability and trajectory diagnostics.} The seed-42 trajectory is deliberately reported alongside its high final accuracy: the evaluation harness appends the question when \texttt{\{question\}} is absent, so placeholder omission is a structural-drift diagnostic rather than a direct failure criterion.}
+\label{tab:dpopt_stability}
 \end{table*}
 
 \noindent \textbf{Root Cause Analysis:}
 
 \noindent \textbf{1. Token-Level Myopia:} DP-OPT generates prompts token by token using a histogram-based exponential mechanism. At each position, it votes on the next token across data partitions. This greedy process lacks global coherence checking, allowing it to:
 \begin{itemize}
-    \item Delete critical placeholders like \texttt{\{question\}} mid-generation
+    \item Omit critical placeholders like \texttt{\{question\}} during generation
     \item Create syntactically valid but semantically meaningless prompts
     \item Drift toward generic text unrelated to the task
 \end{itemize}
@@ -277,7 +274,7 @@ Minor & Suboptimal selection & 14 & 35.0-55.0\% \\
 \noindent \textbf{3. Sample-Based Evaluation Noise:} DP-OPT evaluates candidates on small samples (typically 10-20 examples). A prompt that performs well by chance on this sample may be selected and propagated, even if it generalizes poorly. DP-ES mitigates this through population diversity—multiple independent candidates reduce the risk of overfitting to evaluation noise.
 \vspace{0.4em}
 
-\noindent \textbf{Suboptimal selection.} DP noise can reverse the ordering of candidates with similar utility. DP-OPT commits to each token-level decision without backtracking, so an early rank inversion can permanently redirect construction. DP-ES does not eliminate rank inversions; instead, its population retains multiple complete hypotheses and can recover in later rounds. The 14 runs in this category end in the 35--55\% accuracy cluster without complete placeholder destruction.
+\noindent \textbf{Noise-sensitive selection.} DP noise can reverse the ordering of candidates with similar utility. DP-OPT commits to each token-level decision without backtracking, so an early rank inversion can permanently redirect construction. DP-ES does not eliminate rank inversions; instead, its population retains multiple complete hypotheses and can recover in later rounds.
 \vspace{0.5em}
 
 \noindent \textbf{Why DP-ES Reduces These Failures:}
@@ -288,7 +285,7 @@ Minor & Suboptimal selection & 14 & 35.0-55.0\% \\
     \item \textbf{Privacy-free exploration:} Mutations don't consume privacy budget, allowing extensive search
 \end{itemize}
 
-This analysis explains the 38.6 pp performance gap on GSM8K: DP-OPT's algorithmic fragility causes frequent catastrophic failures, while DP-ES's population-based design provides robustness.
+This analysis offers a mechanism-level explanation consistent with the 38.6 pp mean performance gap and the substantially lower variance of DP-ES on GSM8K.
 
 \subsection{Local Validation with Qwen2.5-7B}
 \label{sec:appendix:local}
