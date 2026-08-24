@@ -33,7 +33,7 @@
     \item Iterations: $T=3$; sampled scoring batch $b=10$
     \item Gaussian mechanism: score sensitivity $1/b$, noise standard deviation $1.0$ (noise multiplier $z=10$)
     \item Selection: Gumbel-smoothed top-$k$ over privatized scores (default); deterministic top-$k$ is an alternative
-    \item Accounting: uniform subsampling without replacement and RDP composition over $TK=18$ score releases, converted at $\delta=10^{-5}$
+    \item Accounting: uniform subsampling without replacement and RDP composition over at most $TK=18$ score releases, converted at $\delta=10^{-5}$
     \item Mutation mode: BALANCED (mix of exploration and exploitation)
     \item Randomness: run counts are reported with each experiment; the three-seed validation studies use seeds [42, 123, 456]
 \end{itemize}
@@ -97,7 +97,7 @@ We restate the privacy argument in full. Let $\calD$ be the private dataset and 
   \calP_{t+1} &= G_t(\calP'_t, U_t). &&
 \end{align*}
 
-\noindent where $M_t$ releases $K$ sampled-Gaussian scores, $\mathrm{Sel}_t$ selects from those privatized scores, and $G_t$ mutates selected prompts using only public randomness $U_t$. Both $\mathrm{Sel}_t$ and $G_t$ are post-processing. Thus the total privacy cost is exactly that of the adaptively composed sampled-Gaussian score releases.
+\noindent where $M_t$ releases $K$ sampled-Gaussian scores in each executed round, $\mathrm{Sel}_t$ selects from those privatized scores, and $G_t$ mutates selected prompts using only public randomness $U_t$. Both $\mathrm{Sel}_t$ and $G_t$ are post-processing. Thus the total privacy cost is that of at most $TK$ adaptively composed sampled-Gaussian score releases.
 
 
 \begin{proof}[Proof sketch]
@@ -105,7 +105,7 @@ We restate the privacy argument in full. Let $\calD$ be the private dataset and 
 
 \noindent \textbf{Step 2 (Post-processing).} Selection sees only privatized scores; mutation sees only public or previously privatized prompts. Neither operation adds privacy loss.
 
-\noindent \textbf{Step 3 (RDP composition).} We apply the without-replacement subsampling bound of \citet{wang2019subsampled} to each score release, add RDP across all $TK$ adaptive releases, and convert to $(\varepsilon,\delta)$-DP. Post-processing then gives the same guarantee for the released final prompt.
+\noindent \textbf{Step 3 (RDP composition).} We apply the without-replacement subsampling bound of \citet{wang2019subsampled} to each score release, add RDP across at most $TK$ adaptive releases, and convert to $(\varepsilon,\delta)$-DP. Post-processing then gives the same guarantee for the released final prompt.
 
 \textbf{Intuition.} Private data influence the search only through noisy scalar scores. Every later operation---ranking, randomized smoothing, LLM mutation, and final choice---uses already privatized outputs.
 \end{proof}
@@ -114,7 +114,7 @@ We restate the privacy argument in full. Let $\calD$ be the private dataset and 
 \label{sec:appendix:derivations}
 
 \noindent\textbf{Sampled-Gaussian accounting.}
-For a batch mean with clipped per-record utility in $[0,1]$, replace-one sensitivity is $\Delta_B=1/b$. Adding noise $\mathcal{N}(0,(z/b)^2)$ is a Gaussian mechanism with noise multiplier $z$. We apply uniform subsampling without replacement at rate $q=b/n$, compose $TK$ mechanisms in RDP, and convert at $\delta=10^{-5}$ using AutoDP \cite{autodp}. Reported runs use $b=10$ and $z=10$. With $K=6$ and $T=3$, the resulting bound is given in Table~\ref{tab:rdp_bounds}.
+For a batch mean with clipped per-record utility in $[0,1]$, replace-one sensitivity is $\Delta_B=1/b$. Adding noise $\mathcal{N}(0,(z/b)^2)$ is a Gaussian mechanism with noise multiplier $z$. We apply uniform subsampling without replacement at rate $q=b/n$, compose at most $TK$ mechanisms in RDP, and convert at $\delta=10^{-5}$ using AutoDP \cite{autodp}. Reported runs use $b=10$ and $z=10$. With $K=6$ and $T=3$, the resulting worst-case bound is given in Table~\ref{tab:rdp_bounds}.
 
 \begin{table*}[t]
 \centering
@@ -126,7 +126,7 @@ For a batch mean with clipped per-record utility in $[0,1]$, replace-one sensiti
 All reported sampled-score runs & 200 & 0.05 & $\leq0.71$ \\
 \bottomrule
 \end{tabular}
-\caption{Recomputed privacy bound for the 18 sampled-Gaussian score releases used in reported DP-ES experiments. We report the common conservative ceiling $\varepsilon\leq1$.}
+\caption{Recomputed worst-case privacy bound for at most 18 sampled-Gaussian score releases in the reported DP-ES configuration. We report the common conservative ceiling $\varepsilon\leq1$.}
 \label{tab:rdp_bounds}
 \end{table*}
 
@@ -377,4 +377,4 @@ Because mutation and candidate generation do not access $\calD$, they incur zero
 
 \vspace{-0.3em}
 \subsection{Proof of Theorem~\ref{thm:main}}
-Mutations consume zero budget (Proposition~\ref{prop:mutation-free}). Each iteration releases $K$ sampled-Gaussian scores. Applying the without-replacement RDP amplification bound to each release, composing the resulting RDP guarantees over $TK$ adaptive calls, and converting at the target $\delta$ yields Table~\ref{tab:rdp_bounds}. Selection and subsequent mutation are post-processing, so the final prompt inherits the same $(\varepsilon,\delta)$ guarantee.
+Mutations consume zero budget (Proposition~\ref{prop:mutation-free}). Each executed iteration releases $K$ sampled-Gaussian scores. Applying the without-replacement RDP amplification bound to each release, composing the resulting RDP guarantees over at most $TK$ adaptive calls, and converting at the target $\delta$ yields Table~\ref{tab:rdp_bounds}. Selection and subsequent mutation are post-processing, so the final prompt inherits the same $(\varepsilon,\delta)$ guarantee.

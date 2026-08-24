@@ -60,7 +60,7 @@ DP-ES (Algorithm~\ref{alg:dpes}) employs an evolution strategy with three key co
 \REQUIRE Private dataset $\calD$, privacy budget $(\eps_{\text{total}}, \delta)$, initial prompt $p_0$, population size $K$, parent count $M\leq K$, iterations $T$
 \ENSURE Optimized prompt $p^*$ with $(\eps_{\text{total}}, \delta)$-DP
 \STATE Initialize parent set $\mathcal{S}_0 \leftarrow \{p_0\}$
-\STATE Calibrate $z$ for $T K$ sampled-Gaussian scores \COMMENT{RDP accountant}
+\STATE Calibrate $z$ for at most $T K$ sampled-Gaussian scores \COMMENT{RDP accountant}
 \FOR{$t = 1$ to $T$}
     \STATE \textcolor{blue}{// Phase 1: Privacy-free mutation}
     \STATE $\mathcal{P}_t \leftarrow \text{Mutate-To-}K(\mathcal{S}_{t-1})$ \COMMENT{$|\mathcal{P}_t|=K$}
@@ -109,10 +109,10 @@ u_i(p) &= \mathbb{1}[\text{LLM}(p,x_i)=y_i],\\
 s_p(B) &= \tfrac{1}{b}\sum_{i\in B}\operatorname{clip}(u_i(p),[0,C_{\text{clip}}]).
 \end{aligned}
 \end{equation}
-The batch sensitivity is $\Delta_B=C_{\text{clip}}/b$. We release $\tilde{s}_p=s_p+\mathcal{N}(0,(z\Delta_B)^2)$ and account for uniform sampling without replacement at rate $q=b/n$ using R\'enyi DP (RDP), composed over all $TK$ scoring operations and converted to $(\eps,\delta)$-DP \cite{wang2019subsampled}. The population is kept at exactly $K$ candidates, and all $K$ candidates---including any carried prompts---receive fresh privatized scores in every round, giving exactly $TK$ releases. In the reported optimization runs, $n{=}200$, $b{=}10$, $z{=}10$, $K{=}6$, and $T{=}3$. AutoDP gives $\eps\leq0.71$ at $\delta=10^{-5}$, so all results conservatively satisfy the stated $\eps\leq1$ guarantee. Full accounting details are in Appendix~\ref{sec:appendix:derivations}.
+The batch sensitivity is $\Delta_B=C_{\text{clip}}/b$. We release $\tilde{s}_p=s_p+\mathcal{N}(0,(z\Delta_B)^2)$ and account for uniform sampling without replacement at rate $q=b/n$ using R\'enyi DP (RDP), composed over at most $TK$ scoring operations and converted to $(\eps,\delta)$-DP \cite{wang2019subsampled}. The population is kept at exactly $K$ candidates, and all $K$ candidates---including any carried prompts---receive fresh privatized scores in each executed round, giving at most $TK$ releases; early termination can only reduce this count. In the reported optimization runs, $n{=}200$, $b{=}10$, $z{=}10$, $K{=}6$, and $T{=}3$. AutoDP gives $\eps\leq0.71$ at $\delta=10^{-5}$, so all results conservatively satisfy the stated $\eps\leq1$ guarantee. Full accounting details are in Appendix~\ref{sec:appendix:derivations}.
 
 \noindent\textbf{Selection, Composition, End-to-End DP.}
-Once the scores are privatized, both deterministic top-$M$ (\textbf{Option B}) and our default Gumbel-smoothed top-$M$ (\textbf{Option A}) are randomized post-processing \cite{dwork2014algorithmic}; neither accesses $\calD$ or incurs additional privacy loss. The Gumbel perturbation uses a fixed, data-independent smoothing scale $\beta$ only to smooth noise-induced rank inversions, not as a second privacy mechanism. Composing the $TK$ sampled-Gaussian score releases with the RDP accountant therefore establishes end-to-end $(\eps,\delta)$-DP for Algorithm~\ref{alg:dpes} (\refstepcounter{theorem}Theorem~\thetheorem\label{thm:main}; Appendix~\ref{sec:appendix:proofs}).
+Once the scores are privatized, both deterministic top-$M$ (\textbf{Option B}) and our default Gumbel-smoothed top-$M$ (\textbf{Option A}) are randomized post-processing \cite{dwork2014algorithmic}; neither accesses $\calD$ or incurs additional privacy loss. The Gumbel perturbation uses a fixed, data-independent smoothing scale $\beta$ only to smooth noise-induced rank inversions, not as a second privacy mechanism. Composing at most $TK$ sampled-Gaussian score releases with the RDP accountant therefore establishes end-to-end $(\eps,\delta)$-DP for Algorithm~\ref{alg:dpes} (\refstepcounter{theorem}Theorem~\thetheorem\label{thm:main}; Appendix~\ref{sec:appendix:proofs}).
 
 \begin{figure*}[!t]
 \centering

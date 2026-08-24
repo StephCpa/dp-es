@@ -229,7 +229,7 @@ if (on('R3')) {
     '#{s}_{p}(#{B}) = #{b}^{−1} Σ_{i∈B} clip(#{u}_{i})',
     'release  #{s}_{p} + @{𝒩}(0, (#{zC}_{clip}/#{b})²)',
     'Each candidate releases one clipped, sampled-Gaussian score from @{𝒟}.',
-    '#{TK} score releases total', 7.4);
+    '≤ #{TK} score releases total', 7.4);
 
   phaseCard('a.p3', C3, GREEN, iconFunnel,
     'Phase 3\nPost-process & select',
@@ -273,7 +273,7 @@ if (on('R5')) {
     x: 0.50, y: ACC_Y, w: W - 1.00, h: ACC_H, rectRadius: 0.05,
     fill: { color: WHITE }, line: { color: RULE_L, width: 0.75 },
   });
-  T('a.acct.line1', '!{Privacy accounting:}  only the #{TK} sampled-Gaussian score releases compose in one',
+  T('a.acct.line1', '!{Privacy accounting:}  at most #{TK} sampled-Gaussian score releases compose in one',
     0.57, ACC_Y + 0.075, W - 1.14, 0.14, { size: 7.2, color: INDI, align: 'center' });
   T('a.acct.line2', 'RDP accountant  ⟹  overall (ε, δ)-DP.   Mutation and selection add no privacy loss.',
     0.57, ACC_Y + 0.235, W - 1.14, 0.14, { size: 7.2, color: INDI, align: 'center' });
