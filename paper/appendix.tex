@@ -29,7 +29,7 @@
 
 \textbf{DP-ES configuration:}
 \begin{itemize}
-    \item Population size: $K=6$ prompts per generation
+    \item Population size: $K=6$ prompts per generation; $M=2$ parents selected per round
     \item Iterations: $T=3$; sampled scoring batch $b=10$
     \item Gaussian mechanism: score sensitivity $1/b$, noise standard deviation $1.0$ (noise multiplier $z=10$)
     \item Selection: Gumbel-smoothed top-$k$ over privatized scores (default); deterministic top-$k$ is an alternative
@@ -131,7 +131,7 @@ All reported sampled-score runs & 200 & 0.05 & $\leq0.71$ \\
 \end{table*}
 
 \noindent\textbf{Gumbel-smoothed selection.}
-For smoothing only, we add independent Gumbel noise to each privatized score before ranking:
+For smoothing only, we add independent Gumbel noise to each privatized score before ranking, with $\beta$ fixed independently of $\calD$:
 \begin{equation}
 \hat{s}_p = \tilde{s}_p + \operatorname{Gumbel}(0,\beta).
 \end{equation}

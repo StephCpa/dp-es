@@ -167,7 +167,7 @@ if (on('R1')) {
     x: 1.85, y: LOOP_Y - 0.095, w: 2.60, h: 0.19, rectRadius: 0.09,
     fill: { color: WHITE }, line: { color: INDI, width: 0.75 },
   });
-  T('a.loop.label', 'Top-K survivors  #{P}_{t}  →  next iteration  (× #{T})',
+  T('a.loop.label', 'Top-M parents  #{S}_{t}  →  next iteration  (× #{T})',
     1.85, LOOP_Y - 0.055, 2.60, 0.13, { size: 6.8, color: INDI, align: 'center', bold: true });
 }
 
@@ -220,8 +220,8 @@ function phaseCard(id, x, accent, iconFn, title, f1, f2, body, cost, fSize) {
 if (on('R3')) {
   phaseCard('a.p1', C1, TEAL, iconDNA,
     'Phase 1\nLLM mutation',
-    '#{p}′  ∼  Mutate(#{p}),   #{p} ∈ #{P}_{t−1}', null,
-    'Uses only parent prompts and public randomness; never reads the private set @{𝒟}.',
+    '#{P}_{t}  ←  Mutate-To-K(#{S}_{t−1}),   |#{P}_{t}| = #{K}', null,
+    'Builds a fixed K-candidate population from selected parents; never reads the private set @{𝒟}.',
     '0 additional privacy loss');
 
   phaseCard('a.p2', C2, INDI, iconBell,
@@ -234,8 +234,8 @@ if (on('R3')) {
   phaseCard('a.p3', C3, GREEN, iconFunnel,
     'Phase 3\nPost-process & select',
     'Gumbel-smoothed or deterministic',
-    'Top-K(private scores)',
-    'Top-K uses only released scores; both options are post-processing.',
+    'Top-M(privatized scores)',
+    'Top-M uses only released scores; both options are post-processing.',
     '0 additional privacy loss', 7.2);
 
   arrowR('a.flow.p1p2', C1 + CW + 0.02, C2 - 0.02, CY + CH / 2, MUTE, 1.5);
@@ -261,7 +261,7 @@ if (on('R4')) {
   arrowU('a.z2.feed', Z2 + 0.34, CY + CH + 0.020, BAND_Y + 0.010, INDI, 1.2);
 
   iconNoAccess('a.z3.noAccess', Z3 + 0.28, midY, 0.28, GREEN);
-  T('a.z3.note', 'Selection reads only\nprivate scores',
+  T('a.z3.note', 'Selection reads only\nprivatized scores',
     Z3 + 0.46, BAND_Y, ZW - 0.54, BAND_H, { size: 6.8, bold: true, color: GREEN, lsm: 1.02, valign: 'middle' });
 }
 
@@ -302,7 +302,7 @@ if (on('R6')) {
   const body = [
     ['Search unit', 'Population of complete prompts', 'Greedy token-by-token construction'],
     ['Private-data access', 'Sampled utility scoring only', 'Private histogram queries during construction'],
-    ['Selection / recovery', 'Top-K on privatized scores; alternatives persist', 'Private token releases; no token-level backtracking'],
+    ['Selection / recovery', 'Top-M on privatized scores; alternatives persist', 'Private token releases; no token-level backtracking'],
   ];
   body.forEach(([a, e, o], i) => {
     const last = i === body.length - 1;
