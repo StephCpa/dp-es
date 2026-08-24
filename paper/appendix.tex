@@ -60,7 +60,7 @@
     
 \noindent \textbf{Privacy accounting:} We use the \texttt{autodp} library \cite{autodp} with the R\'enyi DP accountant for tight composition bounds.
 
-\noindent \textbf{Reproducibility:} We report run counts with each result (30 runs for the GSM8K failure diagnosis, five seeds for the selector ablation, and three seeds for the validation studies). Code, prompts, accountant inputs, and evaluation scripts accompany the final paper.
+\noindent \textbf{Reproducibility:} We report run counts with each result (30 runs for the GSM8K stability analysis, five seeds for the selector ablation, and three seeds for the validation studies). Code, prompts, accountant inputs, and evaluation scripts accompany the final paper.
 
 % \textbf{Computational resources:} Each DP-ES run takes approximately 2-3 hours on a single CPU with API access. Total cost per experiment: \$5-10 in API fees.
 
@@ -114,7 +114,7 @@ We restate the privacy argument in full. Let $\calD$ be the private dataset and 
 \label{sec:appendix:derivations}
 
 \noindent\textbf{Sampled-Gaussian accounting.}
-For a batch mean with clipped per-record utility in $[0,1]$, replace-one sensitivity is $\Delta_B=1/b$. Adding noise $\mathcal{N}(0,(z/b)^2)$ is a Gaussian mechanism with noise multiplier $z$. We apply uniform subsampling without replacement at rate $q=b/n$, compose $TK$ mechanisms in RDP, and convert at $\delta=10^{-5}$ using AutoDP \cite{autodp}. Sampled runs use $b=10$ and $z=10$; full-set variants retain noise standard deviation 1.0, giving $b=n=200$ and $z=200$. With $K=6$ and $T=3$, the resulting bounds are:
+For a batch mean with clipped per-record utility in $[0,1]$, replace-one sensitivity is $\Delta_B=1/b$. Adding noise $\mathcal{N}(0,(z/b)^2)$ is a Gaussian mechanism with noise multiplier $z$. We apply uniform subsampling without replacement at rate $q=b/n$, compose $TK$ mechanisms in RDP, and convert at $\delta=10^{-5}$ using AutoDP \cite{autodp}. Reported runs use $b=10$ and $z=10$. With $K=6$ and $T=3$, the resulting bound is given in Table~\ref{tab:rdp_bounds}.
 
 \begin{table*}[t]
 \centering
@@ -123,11 +123,10 @@ For a batch mean with clipped per-record utility in $[0,1]$, replace-one sensiti
 \toprule
 \textbf{Setting} & $n$ & $q$ & $\varepsilon$ at $\delta=10^{-5}$ \\
 \midrule
-All sampled-score runs & 200 & 0.05 & $\leq0.71$ \\
-Full-set score variants & 200 & 1.00 & $<0.10$ \\
+All reported sampled-score runs & 200 & 0.05 & $\leq0.71$ \\
 \bottomrule
 \end{tabular}
-\caption{Recomputed privacy bounds for 18 sampled-Gaussian score releases. We report the common conservative ceiling $\varepsilon\leq1$.}
+\caption{Recomputed privacy bound for the 18 sampled-Gaussian score releases used in reported DP-ES experiments. We report the common conservative ceiling $\varepsilon\leq1$.}
 \label{tab:rdp_bounds}
 \end{table*}
 
@@ -177,7 +176,7 @@ We log the exact noise draws used by the scorer. For both GSM8K and MedQA, 1,000
 \section{Additional Results and Analyses}
 \label{sec:appendix:results}
 
-\noindent Main results appear in Section~\ref{sec:results}. This appendix provides efficiency comparisons, DP-OPT failure analysis, local validation (including PromptDPSGD), ablations, accounting details, and implementation diagnostics.
+\noindent Main results appear in Section~\ref{sec:results}. This appendix provides efficiency comparisons, DP-OPT stability and trajectory analysis, local validation (including PromptDPSGD), ablations, accounting details, and implementation diagnostics.
 
 \subsection{Efficiency Comparison}
 \label{sec:appendix:efficiency}
@@ -196,8 +195,8 @@ GSM8K & 45.7 hours & \textbf{17.9 hours} & \textbf{2.5$\times$} \\
 MedQA & 18.4 hours & \textbf{7.0 hours} & \textbf{2.6$\times$} \\
 \midrule
 \multicolumn{4}{l}{\textit{Local Qwen2.5-7B ($\varepsilon\leq1.0$, 200 examples):}} \\
-GSM8K & 14.6 hours & \textbf{7.4 hours} & \textbf{1.98$\times$} \\
-MedQA & 3.2 hours & \textbf{1.9 hours} & \textbf{1.73$\times$} \\
+GSM8K & 14.60 hours & \textbf{7.37 hours} & \textbf{1.98$\times$} \\
+MedQA & 3.24 hours & \textbf{1.87 hours} & \textbf{1.73$\times$} \\
 \bottomrule
 \end{tabular}
 \caption{\textbf{Efficiency Comparison (wall-clock).} DP-ES is consistently faster than DP-OPT across both API and local deployments due to efficient population-based evaluation.}
@@ -277,11 +276,11 @@ DP-OPT seed 42 trajectory & 1 & 91.0\% & 21/33 candidates omit \texttt{\{questio
 \noindent \textbf{Noise-sensitive selection.} DP noise can reverse the ordering of candidates with similar utility. DP-OPT commits to each token-level decision without backtracking, so an early rank inversion can permanently redirect construction. DP-ES does not eliminate rank inversions; instead, its population retains multiple complete hypotheses and can recover in later rounds.
 \vspace{0.5em}
 
-\noindent \textbf{Why DP-ES Reduces These Failures:}
+\noindent \textbf{Why DP-ES Improves Stability:}
 
 \begin{itemize}
     \item \textbf{Prompt-level generation:} Mutations operate on complete prompts, preserving global structure
-    \item \textbf{Population diversity:} Even if one candidate fails, others can compensate
+    \item \textbf{Population diversity:} Even if one candidate is degraded by noise, others can compensate
     \item \textbf{Privacy-free exploration:} Mutations don't consume privacy budget, allowing extensive search
 \end{itemize}
 
@@ -313,7 +312,7 @@ PromptDPSGD & $20.0\pm5.8$ & $34.8\pm19.0$ \\
 Non-DP & $26.2\pm10.2$ & $79.5\pm4.2$ \\
 \bottomrule
 \end{tabular}
-\caption{\textbf{Local Qwen2.5-7B validation} at the common $\varepsilon\leq1$ setting (mean $\pm$ std).}
+\caption{\textbf{Local Qwen2.5-7B validation} at the common $\varepsilon\leq1$ setting (three seeds; mean $\pm$ std). Non-DP is a reference rather than an upper bound because the methods use different search procedures.}
 \label{tab:local_validation}
 \end{table}
 

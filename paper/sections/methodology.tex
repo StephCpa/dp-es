@@ -20,6 +20,7 @@ where $f: \calP \times \calD \to \R$ measures prompt quality (e.g., accuracy on 
 \toprule
 $\calD,n$ & private data, size & $K,T$ & population, rounds \\
 $b,q$ & batch size, $q=b/n$ & $z$ & Gaussian noise multiplier \\
+$u_i(p)$ & per-record utility & $C_{\text{clip}}$ & clipping bound \\
 $\widetilde{s}_p$ & privatized score & $\beta$ & Gumbel smoothing scale \\
 \bottomrule
 \end{tabular}
@@ -69,9 +70,9 @@ DP-ES (Algorithm~\ref{alg:dpes}) employs an evolution strategy with three key co
 
     \STATE \textcolor{blue}{// Phase 2: Sampled-Gaussian scoring (RDP-accounted)}
     \FOR{each $p \in \mathcal{P}_t$}
-        \STATE Sample $B\subset\calD$, $|B|=b$; $s_p = \frac{1}{b}\sum_{i\in B}\mathbb{1}[\text{LLM}(p,x_i)=y_i]$
-        \STATE Clip: $s'_p = \text{clip}(s_p, [0, C_{\text{clip}}])$ \COMMENT{$C_{\text{clip}}=1.0$}
-        \STATE Add noise: $\tilde{s}_p = s'_p + \mathcal{N}(0, \sigma^2)$ \COMMENT{$\sigma=zC_{\text{clip}}/b$}
+        \STATE Sample $B\subset\calD$, $|B|=b$; set $u_i(p)=\mathbb{1}[\text{LLM}(p,x_i)=y_i]$
+        \STATE $s_p = \frac{1}{b}\sum_{i\in B}\text{clip}(u_i(p),[0,C_{\text{clip}}])$ \COMMENT{$C_{\text{clip}}=1.0$}
+        \STATE Add noise: $\tilde{s}_p = s_p + \mathcal{N}(0, \sigma^2)$ \COMMENT{$\sigma=zC_{\text{clip}}/b$}
     \ENDFOR
 
     \STATE \textcolor{blue}{// Phase 3: Selection over privatized scores}
@@ -106,9 +107,12 @@ After mutation, each candidate is evaluated on a uniformly sampled batch $B\subs
 
 \vspace{-1em}
 \begin{equation}
-s_p(B) = \tfrac{1}{b}\sum_{i\in B} \mathbb{1}[\text{LLM}(p, x_i) = y_i] \in [0, 1].
+\begin{aligned}
+u_i(p) &= \mathbb{1}[\text{LLM}(p,x_i)=y_i],\\
+s_p(B) &= \tfrac{1}{b}\sum_{i\in B}\operatorname{clip}(u_i(p),[0,C_{\text{clip}}]).
+\end{aligned}
 \end{equation}
-Clipping to $[0,C_{\text{clip}}]$ gives batch sensitivity $\Delta_B=C_{\text{clip}}/b$. We release $\tilde{s}_p=s_p+\mathcal{N}(0,(z\Delta_B)^2)$ and account for uniform sampling without replacement at rate $q=b/n$ using R\'enyi DP (RDP), composed over all $TK$ scoring operations and converted to $(\eps,\delta)$-DP \cite{wang2019subsampled}. In the reported optimization runs, $n{=}200$, $b{=}10$, $z{=}10$, $K{=}6$, and $T{=}3$; full-set variants use the corresponding $b{=}n$ sensitivity. AutoDP gives $\eps\leq0.71$ at $\delta=10^{-5}$, so all results conservatively satisfy the stated $\eps\leq1$ guarantee. Full accounting details are in Appendix~\ref{sec:appendix:derivations}.
+The batch sensitivity is $\Delta_B=C_{\text{clip}}/b$. We release $\tilde{s}_p=s_p+\mathcal{N}(0,(z\Delta_B)^2)$ and account for uniform sampling without replacement at rate $q=b/n$ using R\'enyi DP (RDP), composed over all $TK$ scoring operations and converted to $(\eps,\delta)$-DP \cite{wang2019subsampled}. In the reported optimization runs, $n{=}200$, $b{=}10$, $z{=}10$, $K{=}6$, and $T{=}3$. AutoDP gives $\eps\leq0.71$ at $\delta=10^{-5}$, so all results conservatively satisfy the stated $\eps\leq1$ guarantee. Full accounting details are in Appendix~\ref{sec:appendix:derivations}.
 
 \noindent\textbf{Selection, Composition, End-to-End DP.}
 Once the scores are privatized, both deterministic top-$k$ (\textbf{Option B}) and our default Gumbel-smoothed top-$k$ (\textbf{Option A}) are randomized post-processing \cite{dwork2014algorithmic}; neither accesses $\calD$ or incurs additional privacy loss. The Gumbel perturbation is used only to smooth noise-induced rank inversions, not as a second privacy mechanism. Composing the $TK$ sampled-Gaussian score releases with the RDP accountant therefore establishes end-to-end $(\eps,\delta)$-DP for Algorithm~\ref{alg:dpes} (\refstepcounter{theorem}Theorem~\thetheorem\label{thm:main}; Appendix~\ref{sec:appendix:proofs}).

@@ -18,7 +18,7 @@
     left=3pt,right=3pt,top=3pt,bottom=3pt
 ]
 \footnotesize
-\textbf{Dataset:} 200 synthetic customer profiles spanning 10 US regions, each containing a full name, phone number, email address, street address, and city. \textbf{1,200 unique sensitive tokens total.}
+\textbf{Dataset:} 200 synthetic customer profiles, each yielding six sensitive strings: full name, phone number, email address, full address, street-level address fragment, and account ID. \textbf{1,200 unique sensitive strings total.}
 
 \vspace{0.1em}
 \textbf{Evaluation:} Rewards answers that recover profile details. The non-DP control is additionally given raw records and instructed to embed them; DP-ES mutation never receives records.
@@ -55,7 +55,7 @@ Use this customer directory:\\
 \vspace{0.1em}
 \textbf{Privacy Analysis:}
 \begin{itemize}[leftmargin=*, itemsep=0pt, parsep=0pt, topsep=1pt]
-    \item \textcolor{red}{\textbf{Leaked: 40 tokens (3.33\% of 1,200)}}
+    \item \textcolor{red}{\textbf{Leaked: 40 strings (3.33\% of 1,200)}}
     \item Embeds names, phones, emails, addresses, and account IDs
 \end{itemize}
 \end{tcolorbox}
@@ -85,7 +85,7 @@ account information, verify before responding.
 \vspace{0.1em}
 \textbf{Privacy Analysis:}
 \begin{itemize}[leftmargin=*, itemsep=0pt, parsep=0pt, topsep=1pt]
-    \item \textcolor{green!50!black}{\textbf{Leaked: 0 tokens (0.0\% of 1,200)}}
+    \item \textcolor{green!50!black}{\textbf{Leaked: 0 strings (0.0\% of 1,200)}}
     \item Generic instructions; no listed PII string detected
 \end{itemize}
 \end{tcolorbox}

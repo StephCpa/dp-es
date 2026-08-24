@@ -16,7 +16,7 @@ Private Evolution (PE) is a training-free DP paradigm for data synthesis via API
 
 
 \noindent\textbf{Our Contribution: DP-ES.}
-We frame this work as a \emph{diagnostic and methodological} contribution for DP prompt optimization: we systematically characterize the failure modes of token-level DP construction under tight privacy budgets and propose \textbf{Differentially Private Evolution Strategies (DP-ES)}, a structurally cleaner alternative. Unlike methods that build prompts token by token from privately aggregated counts, DP-ES maintains a population of full prompts that evolve over time. The key design choice is to decouple exploration from privacy consumption: using LLMs to generate semantic mutations consumes \textbf{zero privacy budget} (by the post-processing property), allowing the scarce privacy budget to be allocated strictly to sampled-Gaussian evaluation.
+We frame this work as a \emph{diagnostic and methodological} contribution for DP prompt optimization: we systematically characterize the instability mechanisms of token-level DP construction under tight privacy budgets and propose \textbf{Differentially Private Evolution Strategies (DP-ES)}, a structurally cleaner alternative. Unlike methods that build prompts token by token from privately aggregated counts, DP-ES maintains a population of full prompts that evolve over time. The key design choice is to decouple exploration from privacy consumption: using LLMs to generate semantic mutations consumes \textbf{zero privacy budget} (by the post-processing property), allowing the scarce privacy budget to be allocated strictly to sampled-Gaussian evaluation.
 
 Our contributions are:
 \vspace{-0.3em}
