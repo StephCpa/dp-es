@@ -59,7 +59,7 @@ DP-ES (Algorithm~\ref{alg:dpes}) employs an evolution strategy with three key co
 \begin{algorithmic}[1]
 \REQUIRE Private dataset $\calD$, privacy budget $(\eps_{\text{total}}, \delta)$, initial prompt $p_0$, population size $K$, parent count $M\leq K$, iterations $T$
 \ENSURE Optimized prompt $p^*$ with $(\eps_{\text{total}}, \delta)$-DP
-\STATE Initialize parent set $\mathcal{S}_0 \leftarrow \{p_0\}$
+\STATE Initialize parent set $\mathcal{S}_0 \leftarrow \{p_0\}$ and best-so-far score $\tilde{s}^{*}\leftarrow-\infty$
 \STATE Calibrate $z$ for at most $T K$ sampled-Gaussian scores \COMMENT{RDP accountant}
 \FOR{$t = 1$ to $T$}
     \STATE \textcolor{blue}{// Phase 1: Privacy-free mutation}
@@ -71,13 +71,14 @@ DP-ES (Algorithm~\ref{alg:dpes}) employs an evolution strategy with three key co
         \STATE $s_p = \frac{1}{b}\sum_{i\in B}\text{clip}(u_i(p),[0,C_{\text{clip}}])$ \COMMENT{$C_{\text{clip}}=1.0$}
         \STATE Add noise: $\tilde{s}_p = s_p + \mathcal{N}(0, \sigma^2)$ \COMMENT{$\sigma=zC_{\text{clip}}/b$}
     \ENDFOR
+    \STATE Update $p^*,\tilde{s}^*$ using $\arg\max_{p\in\mathcal{P}_t}\tilde{s}_p$ \COMMENT{post-processing}
 
     \STATE \textcolor{blue}{// Phase 3: Selection over privatized scores}
     \STATE \textbf{Option A} (default): $\hat{s}_p \leftarrow \tilde{s}_p + \text{Gumbel}(0,\beta)$  \COMMENT{fixed $\beta$; post-processing}
     \STATE \textbf{Option B}: $\hat{s}_p \leftarrow \tilde{s}_p$ \COMMENT{Deterministic top-$M$; pure post-processing}
     \STATE $\mathcal{S}_t \leftarrow \text{top-}M(\mathcal{P}_t, \{\hat{s}_p\})$ \COMMENT{parents for next round}
 \ENDFOR
-\RETURN $p^* \leftarrow \arg\max_{p \in \mathcal{S}_T} \hat{s}_p$
+\RETURN $p^*$
 \end{algorithmic}
 \end{algorithm}
 \end{nolinenumbers}

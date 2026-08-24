@@ -32,7 +32,7 @@
     \item Population size: $K=6$ prompts per generation; $M=2$ parents selected per round
     \item Iterations: $T=3$; sampled scoring batch $b=10$
     \item Gaussian mechanism: score sensitivity $1/b$, noise standard deviation $1.0$ (noise multiplier $z=10$)
-    \item Selection: Gumbel-smoothed top-$k$ over privatized scores (default); deterministic top-$k$ is an alternative
+    \item Selection: Gumbel-smoothed top-$M$ over privatized scores (default); deterministic top-$M$ is an alternative
     \item Accounting: uniform subsampling without replacement and RDP composition over at most $TK=18$ score releases, converted at $\delta=10^{-5}$
     \item Mutation mode: BALANCED (mix of exploration and exploitation)
     \item Randomness: run counts are reported with each experiment; the three-seed validation studies use seeds [42, 123, 456]
@@ -77,12 +77,6 @@
 \textit{``You are a prompt optimization assistant. Generate [K] creative variations of the following prompt that might improve performance: [parent prompt]. Make [large/small] semantic changes.''}
 \end{quote}
 
-% \subsection{Selection Implementation (Gumbel-max)}
-% We implement selection efficiently via:
-% \begin{equation}
-% \mathcal{P}_{t+1} = \text{top-}K\left\{ \tilde{s}_p + \text{Gumbel}\left(0, \frac{2\Delta u}{\varepsilon_{\text{select}}}\right) \right\}_{p \in \mathcal{P}_t}
-% \end{equation}
-
 \section{Privacy Guarantees and Verification}
 \label{sec:appendix:privacy_details}
 
@@ -92,16 +86,16 @@
 We restate the privacy argument in full. Let $\calD$ be the private dataset and $\calP_1$ an initial population generated without access to $\calD$. For $t=1,\dots,T$ define
 
 \begin{align*}
-  Z_t &= M_t(\calD, \calP_t), &
+  Z_t &= \mathcal{Q}_t(\calD, \calP_t), &
   \calP'_t &= \mathrm{Sel}_t(Z_t), \\
   \calP_{t+1} &= G_t(\calP'_t, U_t). &&
 \end{align*}
 
-\noindent where $M_t$ releases $K$ sampled-Gaussian scores in each executed round, $\mathrm{Sel}_t$ selects from those privatized scores, and $G_t$ mutates selected prompts using only public randomness $U_t$. Both $\mathrm{Sel}_t$ and $G_t$ are post-processing. Thus the total privacy cost is that of at most $TK$ adaptively composed sampled-Gaussian score releases.
+\noindent where $\mathcal{Q}_t$ releases $K$ sampled-Gaussian scores in each executed round, $\mathrm{Sel}_t$ retains $M$ parents from those privatized scores, and $G_t$ mutates selected prompts using only public randomness $U_t$. Both $\mathrm{Sel}_t$ and $G_t$ are post-processing. Thus the total privacy cost is that of at most $TK$ adaptively composed sampled-Gaussian score releases.
 
 
 \begin{proof}[Proof sketch]
-\textbf{Step 1 (Privacy source).} At each round $t$, only $M_t$ touches $\calD$. Each candidate score uses a uniformly sampled batch of size $b$, clips per-record utility to $[0,1]$, averages it, and adds Gaussian noise with standard deviation $z/b$.
+\textbf{Step 1 (Privacy source).} At each round $t$, only $\mathcal{Q}_t$ touches $\calD$. Each candidate score uses a uniformly sampled batch of size $b$, clips per-record utility to $[0,1]$, averages it, and adds Gaussian noise with standard deviation $z/b$.
 
 \noindent \textbf{Step 2 (Post-processing).} Selection sees only privatized scores; mutation sees only public or previously privatized prompts. Neither operation adds privacy loss.
 
@@ -135,7 +129,7 @@ For smoothing only, we add independent Gumbel noise to each privatized score bef
 \begin{equation}
 \hat{s}_p = \tilde{s}_p + \operatorname{Gumbel}(0,\beta).
 \end{equation}
-Because this operation is a function only of already privatized scores and fresh randomness, it is post-processing for every $\beta\geq0$. Deterministic top-$k$ is the $\beta=0$ special case. Table~\ref{tab:em_ablation} compares their utility.
+Because this operation is a function only of already privatized scores and fresh randomness, it is post-processing for every $\beta\geq0$. Deterministic top-$M$ is the $\beta=0$ special case. Table~\ref{tab:em_ablation} compares their utility.
 
 \subsection{Comparison with DP-OPT Privacy}
 
@@ -356,7 +350,7 @@ Non-DP & $26.2\pm10.2$ & $79.5\pm4.2$ \\
 \subsection{Selection Mechanism Ablation (Extended)}
 \label{sec:appendix:em_ablation}
 
-\noindent Table~\ref{tab:em_ablation} reports the five-seed comparison at the default setting. Gumbel-smoothed and deterministic top-$k$ are statistically similar (88.8\% vs.\ 88.6\%) and have identical privacy accounting because both post-process privatized scores. We use smoothing by default but do not claim a consistent variance advantage.
+\noindent Table~\ref{tab:em_ablation} reports the five-seed comparison at the default setting. Gumbel-smoothed and deterministic top-$M$ are statistically similar (88.8\% vs.\ 88.6\%) and have identical privacy accounting because both post-process privatized scores. We use smoothing by default but do not claim a consistent variance advantage.
 
 \subsection{Population Diversity Analysis}
 \label{sec:appendix:diversity}

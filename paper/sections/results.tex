@@ -50,7 +50,7 @@ To ensure the main trend is not API-specific, we compare all methods locally wit
 \noindent\textbf{Why Evolution Strategies Excel Under DP.}
 Private Evolution \cite{lin2024dpsda_images,xie2024dpsda_text,lin2025simpe} restricts DP spending to low-sensitivity evaluation while keeping exploration privacy-free. DP-ES inherits this benefit: mutation can be arbitrarily rich without paying privacy budget, enabling recovery from noise-induced regressions. Figure~\ref{fig:performance_overview} (right) shows population diversity (cosine distance $\approx0.15$) in early iterations before convergence, giving DP-ES multiple hypotheses when Gaussian noise perturbs scores.
 
-\noindent\textbf{Selection Ablation: Deterministic vs.\ Gumbel-Smoothed Top-$k$.}\label{sec:em_ablation}
+\noindent\textbf{Selection Ablation: Deterministic vs.\ Gumbel-Smoothed Top-$M$.}\label{sec:em_ablation}
 Both selectors operate only on privatized scores and therefore have identical privacy guarantees. Table~\ref{tab:em_ablation} compares them at the default smoothing setting on GSM8K (200 examples).
 
 \begin{table}[t]
@@ -69,4 +69,4 @@ Deterministic & $88.6\pm2.9$ & post-processing \\
 \label{tab:em_ablation}
 \end{table}
 
-\noindent The difference in mean accuracy is 0.2 pp and there is no consistent variance advantage at this setting. We retain Gumbel smoothing as the default randomized tie/rank smoother; deterministic top-$k$ is an equally private alternative. Population-size ablations are in Appendix~\ref{sec:appendix:results}.
+\noindent The difference in mean accuracy is 0.2 pp and there is no consistent variance advantage at this setting. We retain Gumbel smoothing as the default randomized tie/rank smoother; deterministic top-$M$ is an equally private alternative. Population-size ablations are in Appendix~\ref{sec:appendix:results}.
