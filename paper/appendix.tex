@@ -87,8 +87,8 @@ We restate the privacy argument in full. Let $\calD$ be the private dataset and 
 
 \begin{align*}
   Z_t &= \mathcal{Q}_t(\calD, \calP_t), &
-  \calP'_t &= \mathrm{Sel}_t(Z_t), \\
-  \calP_{t+1} &= G_t(\calP'_t, U_t). &&
+  \mathcal{S}_t &= \mathrm{Sel}_t(Z_t), \\
+  \calP_{t+1} &= G_t(\mathcal{S}_t, U_t). &&
 \end{align*}
 
 \noindent where $\mathcal{Q}_t$ releases $K$ sampled-Gaussian scores in each executed round, $\mathrm{Sel}_t$ retains $M$ parents from those privatized scores, and $G_t$ mutates selected prompts using only public randomness $U_t$. Both $\mathrm{Sel}_t$ and $G_t$ are post-processing. Thus the total privacy cost is that of at most $TK$ adaptively composed sampled-Gaussian score releases.
@@ -235,7 +235,7 @@ The resulting efficiency profile is best described as \textit{trade tokens for r
 \subsection{DP-OPT Stability and Trajectory Analysis}
 \label{sec:appendix:dpopt_failures}
 
-\noindent Across 30 GSM8K runs, DP-OPT achieves $49.5{\pm}28.5\%$, whereas DP-ES achieves $88.1{\pm}3.2\%$. We use these distributional statistics directly rather than imposing a post-hoc accuracy threshold to label runs as failures. The main-text visualization (Figure~\ref{fig:dpopt_failures_summary}) reproduces an actual DP-OPT trajectory and illustrates two mechanisms consistent with the observed instability: prompt-template drift during token-level construction and irreversible propagation of noisy ranking decisions.
+\noindent Across 30 GSM8K runs, DP-OPT achieves $49.5{\pm}28.5\%$, whereas DP-ES achieves $88.1{\pm}3.2\%$. We use these distributional statistics directly rather than imposing a post-hoc accuracy threshold to label runs as failures. Table~\ref{tab:dpopt_stability} summarizes the aggregate statistics and representative trajectory diagnostic. The main-text visualization (Figure~\ref{fig:dpopt_failures_summary}) reproduces an actual DP-OPT trajectory and illustrates two mechanisms consistent with the observed instability: prompt-template drift during token-level construction and irreversible propagation of noisy ranking decisions.
 
 \begin{table*}[t]
 \centering
@@ -283,7 +283,7 @@ This analysis offers a mechanism-level explanation consistent with the 38.6 pp m
 \subsection{Local Validation with Qwen2.5-7B}
 \label{sec:appendix:local}
 
-\noindent To check whether the main task-dependent trend transfers beyond the API model, we evaluate four methods with a local Qwen2.5-7B model \cite{qwen2.5} under the common verified $\varepsilon\leq1$ setting.
+\noindent To check whether the main task-dependent trend transfers beyond the API model, we evaluate four methods with a local Qwen2.5-7B model \cite{qwen2.5} under the common verified $\varepsilon\leq1$ setting. Table~\ref{tab:local_validation} reports the results.
 
 \subsubsection{Experimental Setup}
 

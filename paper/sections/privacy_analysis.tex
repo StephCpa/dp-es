@@ -1,7 +1,7 @@
 \section{Privacy Guarantees}
 \label{sec:privacy_analysis}
 
-DP-ES inherits formal $(\varepsilon,\delta)$-DP from a \textit{Decoupled DP Evolution} view: mutations operate on public or previously privatized prompts, and only sampled-Gaussian evaluation accesses $\calD$. RDP accounting composes the $TK$ score releases; both deterministic and Gumbel-smoothed selection are post-processing. The worst reported bound is $(\varepsilon{=}0.71,\delta{=}10^{-5})$, which we conservatively state as $\varepsilon\leq1$. Full derivation and reproducible accountant settings are in Appendix~\ref{sec:appendix:privacy_details}.
+DP-ES inherits formal $(\varepsilon,\delta)$-DP from a \textit{Decoupled DP Evolution} view: mutations operate on public or previously privatized prompts, and only sampled-Gaussian evaluation accesses $\calD$. RDP accounting composes at most $TK$ score releases; both deterministic and Gumbel-smoothed selection are post-processing. The worst reported bound is $(\varepsilon{=}0.71,\delta{=}10^{-5})$, which we conservatively state as $\varepsilon\leq1$. Full derivation and reproducible accountant settings are in Appendix~\ref{sec:appendix:privacy_details}.
 
 \noindent\textbf{Implementation Diagnostics.}
 We record 1,000 injected-noise samples and verify that their standardized distribution is consistent with the configured Gaussian mechanism via a Kolmogorov--Smirnov test. We also compare final-prompt behavior on a small set of neighboring datasets as a debugging diagnostic. Because finite output samples cannot certify DP or reliably estimate privacy loss in this high-dimensional discrete space, we do not interpret this diagnostic as an empirical $\varepsilon$; the guarantee comes from the mechanism-level RDP accountant.
